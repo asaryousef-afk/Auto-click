@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/toolbarRoot"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="#CC222222"
+    android:padding="8dp"
+    android:gravity="center_vertical">
+
+    <ImageButton
+        android:id="@+id/btnDrag"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:background="@android:color/transparent"
+        android:src="@android:drawable/ic_menu_sort_by_size"
+        android:contentDescription="سحب" />
+
+    <ImageButton
+        android:id="@+id/btnPlayPause"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_marginStart="6dp"
+        android:background="@android:color/transparent"
+        android:src="@android:drawable/ic_media_play"
+        android:contentDescription="تشغيل" />
+
+    <ImageButton
+        android:id="@+id/btnHide"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_marginStart="6dp"
+        android:background="@android:color/transparent"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:contentDescription="إخفاء" />
+
+</LinearLayout>
