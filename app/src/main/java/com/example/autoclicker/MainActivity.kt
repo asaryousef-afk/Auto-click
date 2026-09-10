@@ -31,7 +31,7 @@ class MainActivity : AppCompatActivity() {
                 )
                 startActivity(intent)
             } else {
-                Toast.makeText(this, "إذن الظهور فوق التطبيقات مفعّل بالفعل", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Overlay permission already enabled", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -41,11 +41,11 @@ class MainActivity : AppCompatActivity() {
 
         btnStart.setOnClickListener {
             if (!Settings.canDrawOverlays(this)) {
-                Toast.makeText(this, "لازم تفعّل إذن الظهور فوق التطبيقات الأول", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Enable overlay permission first", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             if (!isAccessibilityServiceEnabled()) {
-                Toast.makeText(this, "لازم تفعّل خدمة إتاحة الاستخدام الأول", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Enable Accessibility Service first", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -58,10 +58,10 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, OverlayService::class.java)
             intent.action = OverlayService.ACTION_START
             startForegroundService(intent)
-            Toast.makeText(this, "اتشغّل، دوّر ع الشاشة تلاقي البار العائم", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Started! Look on your screen for the floating toolbar", Toast.LENGTH_SHORT).show()
         }
 
-        statusText.text = "خطوات التشغيل:\n1) فعّل إذن الظهور فوق التطبيقات\n2) فعّل خدمة إتاحة الاستخدام\n3) اضغط ابدأ"
+        statusText.text = "Setup steps:\n1) Enable Display Over Apps\n2) Enable Accessibility Service\n3) Tap Start"
     }
 
     private fun isAccessibilityServiceEnabled(): Boolean {

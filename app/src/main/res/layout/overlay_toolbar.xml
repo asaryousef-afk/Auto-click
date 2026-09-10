@@ -14,7 +14,7 @@
         android:layout_height="36dp"
         android:background="@android:color/transparent"
         android:src="@android:drawable/ic_menu_sort_by_size"
-        android:contentDescription="سحب" />
+        android:contentDescription="Drag" />
 
     <ImageButton
         android:id="@+id/btnPlayPause"
@@ -23,7 +23,7 @@
         android:layout_marginStart="6dp"
         android:background="@android:color/transparent"
         android:src="@android:drawable/ic_media_play"
-        android:contentDescription="تشغيل" />
+        android:contentDescription="Play" />
 
     <ImageButton
         android:id="@+id/btnHide"
@@ -32,6 +32,6 @@
         android:layout_marginStart="6dp"
         android:background="@android:color/transparent"
         android:src="@android:drawable/ic_menu_close_clear_cancel"
-        android:contentDescription="إخفاء" />
+        android:contentDescription="Hide" />
 
 </LinearLayout>

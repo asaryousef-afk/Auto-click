@@ -17,20 +17,20 @@
         android:id="@+id/btnOverlayPermission"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="1) تفعيل إذن الظهور فوق التطبيقات"
+        android:text="1) Enable Display Over Apps"
         android:layout_marginBottom="12dp" />
 
     <Button
         android:id="@+id/btnAccessibilityPermission"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="2) تفعيل خدمة إتاحة الاستخدام"
+        android:text="2) Enable Accessibility Service"
         android:layout_marginBottom="12dp" />
 
     <Button
         android:id="@+id/btnStart"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="3) ابدأ الأوتوكليك" />
+        android:text="3) Start TapGhost" />
 
 </LinearLayout>

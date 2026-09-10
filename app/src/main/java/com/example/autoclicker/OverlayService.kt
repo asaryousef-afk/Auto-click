@@ -4,8 +4,10 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.Handler
@@ -37,6 +39,27 @@ class OverlayService : Service() {
     private var targetView: View? = null
     private var isToolbarVisible = false
     private var isClicking = false
+    private var wasClickingBeforeScreenOff = false
+    private var screenReceiverRegistered = false
+
+    private val screenStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                Intent.ACTION_SCREEN_OFF -> {
+                    if (isClicking) {
+                        wasClickingBeforeScreenOff = true
+                        toggleClicking() // pauses clicking, updates icon/notification
+                    }
+                }
+                Intent.ACTION_SCREEN_ON -> {
+                    if (wasClickingBeforeScreenOff) {
+                        wasClickingBeforeScreenOff = false
+                        toggleClicking() // resumes clicking, updates icon/notification
+                    }
+                }
+            }
+        }
+    }
 
     // إحداثيات نقطة الضغط الحالية (بداية في منتصف الشاشة تقريبًا)
     private var targetX = 300
@@ -56,6 +79,23 @@ class OverlayService : Service() {
         super.onCreate()
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         createNotificationChannel()
+        registerScreenReceiver()
+    }
+
+    private fun registerScreenReceiver() {
+        if (screenReceiverRegistered) return
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_SCREEN_ON)
+        }
+        registerReceiver(screenStateReceiver, filter)
+        screenReceiverRegistered = true
+    }
+
+    private fun unregisterScreenReceiver() {
+        if (!screenReceiverRegistered) return
+        runCatching { unregisterReceiver(screenStateReceiver) }
+        screenReceiverRegistered = false
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -248,7 +288,7 @@ class OverlayService : Service() {
         clickHandler.removeCallbacks(clickRunnable)
     }
 
-    // ---------- الإشعار: هو وسيلة التحكم الوحيدة وقت إخفاء البار ----------
+    // ---------- الإشعار: هو وسيلة التحكم الوحيدة وقت Hide Toolbar ----------
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -268,18 +308,18 @@ class OverlayService : Service() {
     }
 
     private fun buildNotification(): android.app.Notification {
-        val toggleLabel = if (isToolbarVisible) "إخفاء البار" else "إظهار البار"
+        val toggleLabel = if (isToolbarVisible) "Hide Toolbar" else "Show Toolbar"
         val toggleAction = if (isToolbarVisible) ACTION_HIDE else ACTION_SHOW
-        val clickLabel = if (isClicking) "إيقاف الضغط" else "بدء الضغط"
+        val clickLabel = if (isClicking) "Pause Clicking" else "Start Clicking"
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Auto Clicker شغال")
-            .setContentText(if (isClicking) "بيضغط كل ${CLICK_INTERVAL_MS / 1000} ثانية" else "متوقف")
+            .setContentTitle("TapGhost Running")
+            .setContentText(if (isClicking) "Clicking every ${CLICK_INTERVAL_MS / 1000}s" else "Paused")
             .setSmallIcon(android.R.drawable.ic_media_play)
             .setOngoing(true)
             .addAction(0, toggleLabel, pendingActionIntent(toggleAction))
             .addAction(0, clickLabel, pendingActionIntent(ACTION_TOGGLE_CLICK))
-            .addAction(0, "إيقاف نهائي", pendingActionIntent(ACTION_STOP))
+            .addAction(0, "Stop", pendingActionIntent(ACTION_STOP))
             .build()
     }
 
@@ -287,6 +327,7 @@ class OverlayService : Service() {
         super.onDestroy()
         stopClicking()
         removeOverlayViews()
+        unregisterScreenReceiver()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
