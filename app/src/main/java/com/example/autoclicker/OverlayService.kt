@@ -29,7 +29,7 @@ class OverlayService : Service() {
         const val ACTION_TOGGLE_CLICK = "ACTION_TOGGLE_CLICK"
         const val CHANNEL_ID = "autoclicker_channel"
         const val NOTIF_ID = 1
-        const val CLICK_INTERVAL_MS = 800L
+        const val CLICK_INTERVAL_MS = 4000L
     }
 
     private lateinit var windowManager: WindowManager
@@ -274,7 +274,7 @@ class OverlayService : Service() {
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Auto Clicker شغال")
-            .setContentText(if (isClicking) "بيضغط كل ${CLICK_INTERVAL_MS}ms" else "متوقف")
+            .setContentText(if (isClicking) "بيضغط كل ${CLICK_INTERVAL_MS / 1000} ثانية" else "متوقف")
             .setSmallIcon(android.R.drawable.ic_media_play)
             .setOngoing(true)
             .addAction(0, toggleLabel, pendingActionIntent(toggleAction))
