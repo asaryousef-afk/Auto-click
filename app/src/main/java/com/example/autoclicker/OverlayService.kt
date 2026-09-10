@@ -110,7 +110,7 @@ class OverlayService : Service() {
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             overlayType(),
-            WindowManager.LayoutParams.FLAG_NOT_FOCUS_MODAL,
+            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
             PixelFormat.TRANSLUCENT
         )
         toolbarParams.gravity = Gravity.TOP or Gravity.START
@@ -134,7 +134,7 @@ class OverlayService : Service() {
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             overlayType(),
-            WindowManager.LayoutParams.FLAG_NOT_FOCUS_MODAL,
+            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
             PixelFormat.TRANSLUCENT
         )
         targetParams.gravity = Gravity.TOP or Gravity.START
