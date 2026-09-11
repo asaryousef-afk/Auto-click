@@ -313,7 +313,7 @@ class OverlayService : Service() {
         val clickLabel = if (isClicking) "Pause Clicking" else "Start Clicking"
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("TapGhost Running")
+            .setContentTitle("Tap Ghost Running")
             .setContentText(if (isClicking) "Clicking every ${CLICK_INTERVAL_MS / 1000}s" else "Paused")
             .setSmallIcon(android.R.drawable.ic_media_play)
             .setOngoing(true)
