@@ -32,11 +32,13 @@ class OverlayService : Service() {
         const val CHANNEL_ID = "autoclicker_channel"
         const val NOTIF_ID = 1
         const val CLICK_INTERVAL_MS = 4000L
+        const val MOVE_STEP_PX = 15
     }
 
     private lateinit var windowManager: WindowManager
     private var toolbarView: View? = null
     private var targetView: View? = null
+    private var targetParams: WindowManager.LayoutParams? = null
     private var isToolbarVisible = false
     private var isClicking = false
     private var wasClickingBeforeScreenOff = false
@@ -165,27 +167,51 @@ class OverlayService : Service() {
         toolbarView!!.findViewById<ImageButton>(R.id.btnHide).setOnClickListener {
             hideOverlayViews()
         }
+        toolbarView!!.findViewById<ImageButton>(R.id.btnMoveUp).setOnClickListener {
+            nudgeTarget(0, -MOVE_STEP_PX)
+        }
+        toolbarView!!.findViewById<ImageButton>(R.id.btnMoveDown).setOnClickListener {
+            nudgeTarget(0, MOVE_STEP_PX)
+        }
+        toolbarView!!.findViewById<ImageButton>(R.id.btnMoveLeft).setOnClickListener {
+            nudgeTarget(-MOVE_STEP_PX, 0)
+        }
+        toolbarView!!.findViewById<ImageButton>(R.id.btnMoveRight).setOnClickListener {
+            nudgeTarget(MOVE_STEP_PX, 0)
+        }
 
         windowManager.addView(toolbarView, toolbarParams)
 
         // --- علامة الهدف (نقطة الضغط) ---
         targetView = inflater.inflate(R.layout.overlay_target, null)
-        val targetParams = WindowManager.LayoutParams(
+        val newTargetParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             overlayType(),
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
             PixelFormat.TRANSLUCENT
         )
-        targetParams.gravity = Gravity.TOP or Gravity.START
-        targetParams.x = targetX
-        targetParams.y = targetY
+        newTargetParams.gravity = Gravity.TOP or Gravity.START
+        newTargetParams.x = targetX
+        newTargetParams.y = targetY
+        targetParams = newTargetParams
 
-        setupTargetDrag(targetView!!, targetParams)
+        setupTargetDrag(targetView!!, newTargetParams)
 
-        windowManager.addView(targetView, targetParams)
+        windowManager.addView(targetView, newTargetParams)
 
         isToolbarVisible = true
+    }
+
+    /** يحرك علامة الهدف بخطوة صغيرة في أي اتجاه عن طريق أزرار الأسهم */
+    private fun nudgeTarget(dx: Int, dy: Int) {
+        val params = targetParams ?: return
+        val view = targetView ?: return
+        params.x += dx
+        params.y += dy
+        runCatching { windowManager.updateViewLayout(view, params) }
+        targetX = params.x + view.width / 2
+        targetY = params.y + view.height / 2
     }
 
     private fun showOverlayViews() {
@@ -211,6 +237,7 @@ class OverlayService : Service() {
         hideOverlayViews()
         toolbarView = null
         targetView = null
+        targetParams = null
     }
 
     private fun setupToolbarDrag(view: View, params: WindowManager.LayoutParams) {

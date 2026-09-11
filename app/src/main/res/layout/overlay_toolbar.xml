@@ -34,4 +34,61 @@
         android:src="@android:drawable/ic_menu_close_clear_cancel"
         android:contentDescription="Hide" />
 
+    <!-- D-pad to nudge the click target precisely in any direction -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
+
+        <ImageButton
+            android:id="@+id/btnMoveUp"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:background="@android:color/transparent"
+            android:src="@android:drawable/arrow_up_float"
+            android:contentDescription="Move up" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <ImageButton
+                android:id="@+id/btnMoveLeft"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:background="@android:color/transparent"
+                android:rotation="270"
+                android:src="@android:drawable/arrow_up_float"
+                android:contentDescription="Move left" />
+
+            <View
+                android:layout_width="26dp"
+                android:layout_height="26dp" />
+
+            <ImageButton
+                android:id="@+id/btnMoveRight"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:background="@android:color/transparent"
+                android:rotation="90"
+                android:src="@android:drawable/arrow_up_float"
+                android:contentDescription="Move right" />
+
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnMoveDown"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:background="@android:color/transparent"
+            android:rotation="180"
+            android:src="@android:drawable/arrow_up_float"
+            android:contentDescription="Move down" />
+
+    </LinearLayout>
+
 </LinearLayout>
