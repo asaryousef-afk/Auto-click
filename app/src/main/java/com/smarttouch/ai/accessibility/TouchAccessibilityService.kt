@@ -404,6 +404,10 @@ class TouchAccessibilityService : AccessibilityService() {
             Toast.makeText(this, "Point already showing at ${floatingParams?.x}, ${floatingParams?.y}", Toast.LENGTH_SHORT).show()
             return
         }
+        if (!android.provider.Settings.canDrawOverlays(this)) {
+            Toast.makeText(this, "Enable \"Display over other apps\" for Smart Touch AI in Settings first", Toast.LENGTH_LONG).show()
+            return
+        }
         val wm = windowManager ?: return
 
         val inflater = LayoutInflater.from(this)
@@ -412,7 +416,7 @@ class TouchAccessibilityService : AccessibilityService() {
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
             PixelFormat.TRANSLUCENT
         )
@@ -471,7 +475,7 @@ class TouchAccessibilityService : AccessibilityService() {
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
             PixelFormat.TRANSLUCENT
         )
