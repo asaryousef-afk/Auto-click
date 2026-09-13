@@ -258,7 +258,7 @@ class TouchAccessibilityService : AccessibilityService() {
         val point = safeTouchPoint() ?: return
         val path = Path().apply { moveTo(point.first, point.second) }
         val duration = currentSettings.touchDurationMs.coerceIn(1L, 2000L)
-        val stroke = GestureDescription.StrokeDescription(path, 0, duration)
+        val stroke = GestureDescription.StrokeDescription(path, 0L, duration)
         val gesture = GestureDescription.Builder().addStroke(stroke).build()
         dispatchGesture(gesture, null, null)
     }
