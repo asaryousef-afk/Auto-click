@@ -6,3 +6,9 @@ enum class Sensitivity {
     HIGH,
     CUSTOM
 }
+
+enum class DetectionMode {
+    VISUAL,
+    AUDIO,
+    EITHER
+}

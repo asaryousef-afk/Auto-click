@@ -30,6 +30,7 @@ import com.smarttouch.ai.R
 import com.smarttouch.ai.ServiceActionReceiver
 import com.smarttouch.ai.data.SettingsRepository
 import com.smarttouch.ai.data.TouchSettings
+import com.smarttouch.ai.detection.DetectionMode
 import com.smarttouch.ai.detection.MotionDetector
 import com.smarttouch.ai.detection.TouchIntervalCalculator
 import com.smarttouch.ai.detection.VideoActivityTracker
@@ -90,6 +91,9 @@ class TouchAccessibilityService : AccessibilityService() {
     val debugSnapshot: StateFlow<DebugSnapshot> = _debugSnapshot.asStateFlow()
 
     private var windowManager: WindowManager? = null
+    private val audioManager: android.media.AudioManager by lazy {
+        getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+    }
     private var floatingView: View? = null
     private var floatingParams: WindowManager.LayoutParams? = null
 
@@ -273,38 +277,62 @@ class TouchAccessibilityService : AccessibilityService() {
                     continue
                 }
 
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-                    pushDebugSnapshot(lastEvent = "Video detection needs Android 11+")
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R && currentSettings.detectionMode != DetectionMode.AUDIO) {
+                    pushDebugSnapshot(lastEvent = "Visual detection needs Android 11+ - try Audio mode instead")
                     delay(1000)
                     continue
                 }
 
-                val frame = captureLuminanceFrame()
-                val sinceLastTapMs = System.currentTimeMillis() - lastTapAtMs
-                val ignoreThisFrame = sinceLastTapMs in 0..TAP_VISUAL_SETTLE_MS
+                val mode = currentSettings.detectionMode
+                val audioActive = runCatching { audioManager.isMusicActive }.getOrDefault(false)
 
-                if (frame != null && !ignoreThisFrame) {
-                    val score = motionDetector.analyzeFrame(frame)
-                    val motionDetected = motionDetector.isMotionSignificant(score)
-                    val active = activityTracker.onFrameAnalyzed(motionDetected, System.currentTimeMillis())
+                var motionDetected = false
+                var score = 0f
+                var eventLabel = "Still"
 
-                    pushDebugSnapshot(
-                        motionScore = score,
-                        videoActive = active,
-                        lastEvent = if (motionDetected) "Motion" else "Still"
-                    )
+                if (mode == DetectionMode.AUDIO) {
+                    motionDetected = audioActive
+                    eventLabel = if (audioActive) "Audio playing" else "No audio"
+                } else {
+                    val frame = captureLuminanceFrame()
+                    val sinceLastTapMs = System.currentTimeMillis() - lastTapAtMs
+                    val ignoreThisFrame = sinceLastTapMs in 0..TAP_VISUAL_SETTLE_MS
 
-                    if (active && stateMachine.state == ServiceState.VIDEO_DETECTING) {
-                        stateMachine.onVideoActive()
-                        stateMachine.onTouchingStarted()
-                        updateNotification("Video active - touching", videoActive = true)
-                        startTouchLoop()
-                    } else if (!active && (stateMachine.state == ServiceState.VIDEO_ACTIVE || stateMachine.state == ServiceState.TOUCHING)) {
-                        stateMachine.onVideoInactive()
-                        touchJob?.cancel()
-                        touchJob = null
-                        updateNotification("Detecting video...", videoActive = false)
+                    if (frame != null && !ignoreThisFrame) {
+                        score = motionDetector.analyzeFrame(frame)
+                        val visualMotion = motionDetector.isMotionSignificant(score)
+                        motionDetected = if (mode == DetectionMode.EITHER) visualMotion || audioActive else visualMotion
+                        eventLabel = when {
+                            visualMotion && audioActive -> "Motion + audio"
+                            visualMotion -> "Motion"
+                            audioActive -> "Audio playing"
+                            else -> "Still"
+                        }
+                    } else if (mode == DetectionMode.EITHER) {
+                        // frame skipped (post-tap settle window) - audio can still gate on its own
+                        motionDetected = audioActive
+                        eventLabel = if (audioActive) "Audio playing" else "Still"
                     }
+                }
+
+                val active = activityTracker.onFrameAnalyzed(motionDetected, System.currentTimeMillis())
+
+                pushDebugSnapshot(
+                    motionScore = score,
+                    videoActive = active,
+                    lastEvent = eventLabel
+                )
+
+                if (active && stateMachine.state == ServiceState.VIDEO_DETECTING) {
+                    stateMachine.onVideoActive()
+                    stateMachine.onTouchingStarted()
+                    updateNotification("Video active - touching", videoActive = true)
+                    startTouchLoop()
+                } else if (!active && (stateMachine.state == ServiceState.VIDEO_ACTIVE || stateMachine.state == ServiceState.TOUCHING)) {
+                    stateMachine.onVideoInactive()
+                    touchJob?.cancel()
+                    touchJob = null
+                    updateNotification("Detecting video...", videoActive = false)
                 }
 
                 delay(currentSettings.detectionIntervalMs)
@@ -353,7 +381,7 @@ class TouchAccessibilityService : AccessibilityService() {
     private fun safeContentBounds(): Rect? {
         windowManager ?: return null
         val metrics: DisplayMetrics = resources.displayMetrics
-        val navBarMargin = (16 * metrics.density).toInt() // keep clear of the very edge only
+        val navBarMargin = (2 * metrics.density).toInt() // essentially edge-to-edge
         return Rect(
             navBarMargin,
             navBarMargin,

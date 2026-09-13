@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.smarttouch.ai.detection.DetectionMode
 import com.smarttouch.ai.detection.Sensitivity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -27,6 +28,7 @@ data class TouchSettings(
     val overlayLocked: Boolean = false,
     val cleanScreenMode: Boolean = false,
     val videoDetectionEnabled: Boolean = true,
+    val detectionMode: DetectionMode = DetectionMode.EITHER,
     val sensitivity: Sensitivity = Sensitivity.MEDIUM,
     val customThreshold: Float = 0.02f,
     val detectionIntervalMs: Long = 500L,
@@ -55,6 +57,7 @@ class SettingsRepository(private val context: Context) {
         val OVERLAY_LOCKED = booleanPreferencesKey("overlay_locked")
         val CLEAN_SCREEN = booleanPreferencesKey("clean_screen")
         val VIDEO_DETECTION_ENABLED = booleanPreferencesKey("video_detection_enabled")
+        val DETECTION_MODE = stringPreferencesKey("detection_mode")
         val SENSITIVITY = stringPreferencesKey("sensitivity")
         val CUSTOM_THRESHOLD = floatPreferencesKey("custom_threshold")
         val DETECTION_INTERVAL_MS = longPreferencesKey("detection_interval_ms")
@@ -79,6 +82,9 @@ class SettingsRepository(private val context: Context) {
             overlayLocked = prefs[Keys.OVERLAY_LOCKED] ?: false,
             cleanScreenMode = prefs[Keys.CLEAN_SCREEN] ?: false,
             videoDetectionEnabled = prefs[Keys.VIDEO_DETECTION_ENABLED] ?: true,
+            detectionMode = runCatching {
+                DetectionMode.valueOf(prefs[Keys.DETECTION_MODE] ?: DetectionMode.EITHER.name)
+            }.getOrDefault(DetectionMode.EITHER),
             sensitivity = runCatching {
                 Sensitivity.valueOf(prefs[Keys.SENSITIVITY] ?: Sensitivity.MEDIUM.name)
             }.getOrDefault(Sensitivity.MEDIUM),
@@ -113,6 +119,7 @@ class SettingsRepository(private val context: Context) {
     suspend fun updateOverlayLocked(locked: Boolean) = edit(Keys.OVERLAY_LOCKED, locked)
     suspend fun updateCleanScreenMode(enabled: Boolean) = edit(Keys.CLEAN_SCREEN, enabled)
     suspend fun updateVideoDetectionEnabled(enabled: Boolean) = edit(Keys.VIDEO_DETECTION_ENABLED, enabled)
+    suspend fun updateDetectionMode(mode: DetectionMode) = edit(Keys.DETECTION_MODE, mode.name)
     suspend fun updateSensitivity(sensitivity: Sensitivity) = edit(Keys.SENSITIVITY, sensitivity.name)
     suspend fun updateCustomThreshold(value: Float) = edit(Keys.CUSTOM_THRESHOLD, value)
     suspend fun updateDetectionInterval(ms: Long) = edit(Keys.DETECTION_INTERVAL_MS, ms)

@@ -44,6 +44,7 @@ import com.smarttouch.ai.accessibility.DebugSnapshot
 import com.smarttouch.ai.accessibility.TouchAccessibilityService
 import com.smarttouch.ai.data.SettingsRepository
 import com.smarttouch.ai.data.TouchSettings
+import com.smarttouch.ai.detection.DetectionMode
 import com.smarttouch.ai.detection.Sensitivity
 import com.smarttouch.ai.detection.TouchIntervalCalculator
 import com.smarttouch.ai.state.ServiceState
@@ -490,6 +491,22 @@ private fun VideoDetectionScreen(
             color = Color.White.copy(alpha = 0.5f),
             fontSize = 12.sp
         )
+
+        SectionLabel("Detection method")
+        Text(
+            "Audio is usually far more reliable than watching the screen - most videos play sound. Visual can still help for muted videos.",
+            color = Color.White.copy(alpha = 0.5f),
+            fontSize = 12.sp
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            DetectionMode.entries.forEach { mode ->
+                ChoiceChip(
+                    label = mode.name,
+                    selected = settings.detectionMode == mode,
+                    onClick = { onUpdate { it.updateDetectionMode(mode) } }
+                )
+            }
+        }
 
         SectionLabel("Detection point")
         Text(
