@@ -112,7 +112,7 @@ class MainActivity : ComponentActivity() {
                             onShowOverlay = { TouchAccessibilityService.instance?.showFloatingControl() },
                             onHideOverlay = { TouchAccessibilityService.instance?.hideFloatingControl() },
                             onUpdate = { update -> lifecycleScope.launch { update(settingsRepository) } },
-                            onTestTouch = { TouchAccessibilityService.instance?.startEngine() }
+                            onTestTouch = { TouchAccessibilityService.instance?.testSingleTap() }
                         )
                         Screen.VIDEO_DETECTION -> VideoDetectionScreen(
                             settings = settings,

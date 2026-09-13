@@ -179,6 +179,22 @@ class TouchAccessibilityService : AccessibilityService() {
         mainHandler.post { addFloatingViewIfNeeded() }
     }
 
+    /** Performs exactly one tap at the current touch position (or overlay position),
+     * regardless of engine/video state - used by the "Test tap" button so the user
+     * gets immediate feedback while positioning the dot. */
+    fun testSingleTap() {
+        val point = floatingParams?.let { it.x.toFloat() to it.y.toFloat() } ?: safeTouchPoint()
+        if (point == null) {
+            updateNotification("Set a touch position first", videoActive = false)
+            return
+        }
+        val path = Path().apply { moveTo(point.first, point.second) }
+        val duration = currentSettings.touchDurationMs.coerceIn(1L, 2000L)
+        val stroke = GestureDescription.StrokeDescription(path, 0L, duration)
+        val gesture = GestureDescription.Builder().addStroke(stroke).build()
+        dispatchGesture(gesture, null, null)
+    }
+
     fun hideFloatingControl() {
         mainHandler.post { removeFloatingView() }
     }
@@ -383,12 +399,19 @@ class TouchAccessibilityService : AccessibilityService() {
         params.gravity = Gravity.TOP or Gravity.START
 
         val existing = currentSettings
-        params.x = if (existing.hasTouchPosition) existing.touchX.toInt() else 200
-        params.y = if (existing.hasTouchPosition) existing.touchY.toInt() else 400
+        val metrics = resources.displayMetrics
+        val defaultX = metrics.widthPixels / 2
+        val defaultY = metrics.heightPixels / 2
+        params.x = if (existing.hasTouchPosition) existing.touchX.toInt() else defaultX
+        params.y = if (existing.hasTouchPosition) existing.touchY.toInt() else defaultY
 
         setupDragListener(view, params)
 
-        wm.addView(view, params)
+        val added = runCatching { wm.addView(view, params) }
+        if (added.isFailure) {
+            updateNotification("Overlay permission missing - enable it in app settings", videoActive = false)
+            return
+        }
         floatingView = view
         floatingParams = params
         overlayVisible = true
