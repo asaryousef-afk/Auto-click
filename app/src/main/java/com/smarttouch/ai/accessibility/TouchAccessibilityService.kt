@@ -92,6 +92,9 @@ class TouchAccessibilityService : AccessibilityService() {
     private var windowManager: WindowManager? = null
     private var floatingView: View? = null
     private var floatingParams: WindowManager.LayoutParams? = null
+
+    private var detectionPointView: View? = null
+    private var detectionPointParams: WindowManager.LayoutParams? = null
     private var overlayVisible = false
 
     private var debugBadgeView: View? = null
@@ -130,6 +133,7 @@ class TouchAccessibilityService : AccessibilityService() {
         stopEngine()
         removeFloatingView()
         removeDebugBadge()
+        removeDetectionPoint()
         serviceScope.cancel()
         super.onDestroy()
     }
@@ -216,6 +220,35 @@ class TouchAccessibilityService : AccessibilityService() {
 
     fun hideLiveMotionOverlay() {
         mainHandler.post { removeDebugBadge() }
+    }
+
+    fun growTouchDot() = adjustDotSize(+4f)
+    fun shrinkTouchDot() = adjustDotSize(-2f)
+
+    private fun adjustDotSize(deltaDp: Float) {
+        val newSize = (currentSettings.dotSizeDp + deltaDp).coerceIn(3f, 90f)
+        serviceScope.launch { settingsRepository.updateDotSize(newSize) }
+        mainHandler.post { resizeFloatingView(newSize) }
+    }
+
+    private fun resizeFloatingView(sizeDp: Float) {
+        val view = floatingView ?: return
+        val params = floatingParams ?: return
+        val sizePx = (sizeDp * resources.displayMetrics.density).toInt().coerceAtLeast(2)
+        params.width = sizePx
+        params.height = sizePx
+        runCatching { windowManager?.updateViewLayout(view, params) }
+    }
+
+    /** A second, independently-draggable point marking the CENTER of the region to
+     * analyze for video motion - separate from the tap point, since the tap point is
+     * often placed somewhere (like near the edge/nav area) where no video ever plays. */
+    fun showDetectionPoint() {
+        mainHandler.post { addDetectionPointIfNeeded() }
+    }
+
+    fun hideDetectionPoint() {
+        mainHandler.post { removeDetectionPoint() }
     }
 
     // ---------- Detection loop ----------
@@ -370,13 +403,37 @@ class TouchAccessibilityService : AccessibilityService() {
 
     private fun toLuminanceGrid(bitmap: Bitmap): IntArray {
         val grid = IntArray(GRID_SIZE * GRID_SIZE)
-        val w = bitmap.width
-        val h = bitmap.height
+        val fullW = bitmap.width
+        val fullH = bitmap.height
+
+        // Sample only around the detection point if one is set, instead of the whole
+        // screen - this way a tap point placed near the edge (where no video ever
+        // plays) doesn't have to also serve as the motion-sampling area.
+        val settings = currentSettings
+        val regionPx = (settings.detectionRegionSizeDp * resources.displayMetrics.density).toInt()
+        val left: Int
+        val top: Int
+        val w: Int
+        val h: Int
+        if (settings.hasDetectionPosition) {
+            val cx = settings.detectionX.toInt()
+            val cy = settings.detectionY.toInt()
+            left = (cx - regionPx / 2).coerceIn(0, (fullW - 1).coerceAtLeast(0))
+            top = (cy - regionPx / 2).coerceIn(0, (fullH - 1).coerceAtLeast(0))
+            w = regionPx.coerceAtMost(fullW - left).coerceAtLeast(1)
+            h = regionPx.coerceAtMost(fullH - top).coerceAtLeast(1)
+        } else {
+            left = 0
+            top = 0
+            w = fullW
+            h = fullH
+        }
+
         var index = 0
         for (gy in 0 until GRID_SIZE) {
             for (gx in 0 until GRID_SIZE) {
-                val px = (gx * w / GRID_SIZE).coerceIn(0, w - 1)
-                val py = (gy * h / GRID_SIZE).coerceIn(0, h - 1)
+                val px = (left + gx * w / GRID_SIZE).coerceIn(0, fullW - 1)
+                val py = (top + gy * h / GRID_SIZE).coerceIn(0, fullH - 1)
                 val pixel = bitmap.getPixel(px, py)
                 val luminance = (Color.red(pixel) * 0.299 + Color.green(pixel) * 0.587 + Color.blue(pixel) * 0.114).toInt()
                 grid[index++] = luminance
@@ -420,7 +477,7 @@ class TouchAccessibilityService : AccessibilityService() {
         // Build the dot as a plain View with a directly-set background color, sized in
         // raw pixels - this avoids any XML-inflation / shape-drawable rendering edge
         // cases and is the most reliable way to guarantee something visible appears.
-        val sizePx = (3 * resources.displayMetrics.density).toInt()
+        val sizePx = (currentSettings.dotSizeDp * resources.displayMetrics.density).toInt().coerceAtLeast(2)
         val view = View(this).apply {
             background = android.graphics.drawable.GradientDrawable().apply {
                 shape = android.graphics.drawable.GradientDrawable.OVAL
@@ -477,6 +534,67 @@ class TouchAccessibilityService : AccessibilityService() {
         Toast.makeText(this, "Point hidden", Toast.LENGTH_SHORT).show()
     }
 
+    private fun addDetectionPointIfNeeded() {
+        if (detectionPointView != null) {
+            Toast.makeText(this, "Detection point already showing", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (!android.provider.Settings.canDrawOverlays(this)) {
+            Toast.makeText(this, "Enable \"Display over other apps\" for Smart Touch AI first", Toast.LENGTH_LONG).show()
+            return
+        }
+        val wm = windowManager ?: return
+
+        val sizePx = (18 * resources.displayMetrics.density).toInt()
+        val view = View(this).apply {
+            background = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.OVAL
+                setColor(android.graphics.Color.parseColor("#6BD6FF"))
+                setStroke((2 * resources.displayMetrics.density).toInt(), android.graphics.Color.WHITE)
+            }
+            elevation = 999f
+        }
+
+        val params = WindowManager.LayoutParams(
+            sizePx,
+            sizePx,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            PixelFormat.TRANSLUCENT
+        )
+        params.gravity = Gravity.TOP or Gravity.START
+
+        val metrics = resources.displayMetrics
+        val existing = currentSettings
+        params.x = if (existing.hasDetectionPosition) existing.detectionX.toInt() else metrics.widthPixels / 2
+        params.y = if (existing.hasDetectionPosition) existing.detectionY.toInt() else metrics.heightPixels / 3
+
+        setupDragListener(view, params) { x, y ->
+            serviceScope.launch { settingsRepository.updateDetectionPosition(x, y) }
+        }
+
+        val added = runCatching { wm.addView(view, params) }
+        if (added.isFailure) {
+            Toast.makeText(this, "Couldn't show detection point: ${added.exceptionOrNull()?.javaClass?.simpleName}", Toast.LENGTH_LONG).show()
+            return
+        }
+        Toast.makeText(this, "Detection point shown at ${params.x}, ${params.y}", Toast.LENGTH_SHORT).show()
+        detectionPointView = view
+        detectionPointParams = params
+    }
+
+    private fun removeDetectionPoint() {
+        val wm = windowManager ?: return
+        if (detectionPointView == null) {
+            Toast.makeText(this, "No detection point currently showing", Toast.LENGTH_SHORT).show()
+            return
+        }
+        detectionPointView?.let { runCatching { wm.removeView(it) } }
+        detectionPointView = null
+        detectionPointParams = null
+        Toast.makeText(this, "Detection point hidden", Toast.LENGTH_SHORT).show()
+    }
+
     private fun applyOverlayVisuals(settings: TouchSettings) {
         val view = floatingView ?: return
         view.alpha = settings.overlayOpacity.coerceIn(0.15f, 1f)
@@ -526,7 +644,13 @@ class TouchAccessibilityService : AccessibilityService() {
         )
     }
 
-    private fun setupDragListener(view: View, params: WindowManager.LayoutParams) {
+    private fun setupDragListener(
+        view: View,
+        params: WindowManager.LayoutParams,
+        onDragEnd: (x: Float, y: Float) -> Unit = { x, y ->
+            serviceScope.launch { settingsRepository.updateTouchPosition(x, y) }
+        }
+    ) {
         var initialX = 0
         var initialY = 0
         var initialTouchX = 0f
@@ -557,9 +681,7 @@ class TouchAccessibilityService : AccessibilityService() {
                     true
                 }
                 MotionEvent.ACTION_UP -> {
-                    serviceScope.launch {
-                        settingsRepository.updateTouchPosition(params.x.toFloat(), params.y.toFloat())
-                    }
+                    onDragEnd(params.x.toFloat(), params.y.toFloat())
                     true
                 }
                 else -> false

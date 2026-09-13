@@ -16,6 +16,10 @@ private val Context.dataStore by preferencesDataStore(name = "smart_touch_settin
 data class TouchSettings(
     val touchX: Float = -1f,
     val touchY: Float = -1f,
+    val dotSizeDp: Float = 3f,
+    val detectionX: Float = -1f,
+    val detectionY: Float = -1f,
+    val detectionRegionSizeDp: Float = 260f,
     val intervalMs: Long = 2000L,
     val customIntervalMs: Long = 2000L,
     val touchDurationMs: Long = 50L,
@@ -32,6 +36,7 @@ data class TouchSettings(
     val debugMode: Boolean = false
 ) {
     val hasTouchPosition: Boolean get() = touchX >= 0f && touchY >= 0f
+    val hasDetectionPosition: Boolean get() = detectionX >= 0f && detectionY >= 0f
 }
 
 class SettingsRepository(private val context: Context) {
@@ -39,6 +44,10 @@ class SettingsRepository(private val context: Context) {
     private object Keys {
         val TOUCH_X = floatPreferencesKey("touch_x")
         val TOUCH_Y = floatPreferencesKey("touch_y")
+        val DOT_SIZE_DP = floatPreferencesKey("dot_size_dp")
+        val DETECTION_X = floatPreferencesKey("detection_x")
+        val DETECTION_Y = floatPreferencesKey("detection_y")
+        val DETECTION_REGION_SIZE_DP = floatPreferencesKey("detection_region_size_dp")
         val INTERVAL_MS = longPreferencesKey("interval_ms")
         val CUSTOM_INTERVAL_MS = longPreferencesKey("custom_interval_ms")
         val TOUCH_DURATION_MS = longPreferencesKey("touch_duration_ms")
@@ -59,6 +68,10 @@ class SettingsRepository(private val context: Context) {
         TouchSettings(
             touchX = prefs[Keys.TOUCH_X] ?: -1f,
             touchY = prefs[Keys.TOUCH_Y] ?: -1f,
+            dotSizeDp = prefs[Keys.DOT_SIZE_DP] ?: 3f,
+            detectionX = prefs[Keys.DETECTION_X] ?: -1f,
+            detectionY = prefs[Keys.DETECTION_Y] ?: -1f,
+            detectionRegionSizeDp = prefs[Keys.DETECTION_REGION_SIZE_DP] ?: 260f,
             intervalMs = prefs[Keys.INTERVAL_MS] ?: 2000L,
             customIntervalMs = prefs[Keys.CUSTOM_INTERVAL_MS] ?: 2000L,
             touchDurationMs = prefs[Keys.TOUCH_DURATION_MS] ?: 50L,
@@ -86,6 +99,14 @@ class SettingsRepository(private val context: Context) {
     }
 
     suspend fun updateInterval(ms: Long) = edit(Keys.INTERVAL_MS, ms)
+    suspend fun updateDotSize(dp: Float) = edit(Keys.DOT_SIZE_DP, dp)
+    suspend fun updateDetectionPosition(x: Float, y: Float) {
+        context.dataStore.edit {
+            it[Keys.DETECTION_X] = x
+            it[Keys.DETECTION_Y] = y
+        }
+    }
+    suspend fun updateDetectionRegionSize(dp: Float) = edit(Keys.DETECTION_REGION_SIZE_DP, dp)
     suspend fun updateCustomInterval(ms: Long) = edit(Keys.CUSTOM_INTERVAL_MS, ms)
     suspend fun updateTouchDuration(ms: Long) = edit(Keys.TOUCH_DURATION_MS, ms)
     suspend fun updateOverlayOpacity(value: Float) = edit(Keys.OVERLAY_OPACITY, value)

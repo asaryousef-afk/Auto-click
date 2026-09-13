@@ -113,12 +113,16 @@ class MainActivity : ComponentActivity() {
                             onShowOverlay = { callServiceOrWarn { it.showFloatingControl() } },
                             onHideOverlay = { callServiceOrWarn { it.hideFloatingControl() } },
                             onUpdate = { update -> lifecycleScope.launch { update(settingsRepository) } },
-                            onTestTouch = { callServiceOrWarn { it.testSingleTap() } }
+                            onTestTouch = { callServiceOrWarn { it.testSingleTap() } },
+                            onGrowDot = { callServiceOrWarn { it.growTouchDot() } },
+                            onShrinkDot = { callServiceOrWarn { it.shrinkTouchDot() } }
                         )
                         Screen.VIDEO_DETECTION -> VideoDetectionScreen(
                             settings = settings,
                             onBack = { screen = Screen.HOME },
-                            onUpdate = { update -> lifecycleScope.launch { update(settingsRepository) } }
+                            onUpdate = { update -> lifecycleScope.launch { update(settingsRepository) } },
+                            onShowDetectionPoint = { callServiceOrWarn { it.showDetectionPoint() } },
+                            onHideDetectionPoint = { callServiceOrWarn { it.hideDetectionPoint() } }
                         )
                         Screen.ADVANCED -> AdvancedScreen(
                             settings = settings,
@@ -399,7 +403,9 @@ private fun TouchSettingsScreen(
     onShowOverlay: () -> Unit,
     onHideOverlay: () -> Unit,
     onUpdate: (suspend (SettingsRepository) -> Unit) -> Unit,
-    onTestTouch: () -> Unit
+    onTestTouch: () -> Unit,
+    onGrowDot: () -> Unit,
+    onShrinkDot: () -> Unit
 ) {
     ScreenScaffold(title = "Touch Settings", onBack = onBack) {
         Text("Drag the on-screen dot to position your tap, then hide it.", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
@@ -409,6 +415,18 @@ private fun TouchSettingsScreen(
             SmallButton("Hide point", onHideOverlay)
             SmallButton("Test tap", onTestTouch)
         }
+
+        SectionLabel("Dot size")
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            SmallButton("- Smaller", onShrinkDot)
+            Text("${settings.dotSizeDp.toInt()}dp", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+            SmallButton("+ Bigger", onGrowDot)
+        }
+        Text(
+            "Tip: make it bigger while positioning it, then shrink it back down once it's where you want it.",
+            color = Color.White.copy(alpha = 0.4f),
+            fontSize = 11.sp
+        )
 
         SectionLabel("Interval")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -459,7 +477,9 @@ private fun TouchSettingsScreen(
 private fun VideoDetectionScreen(
     settings: TouchSettings,
     onBack: () -> Unit,
-    onUpdate: (suspend (SettingsRepository) -> Unit) -> Unit
+    onUpdate: (suspend (SettingsRepository) -> Unit) -> Unit,
+    onShowDetectionPoint: () -> Unit,
+    onHideDetectionPoint: () -> Unit
 ) {
     ScreenScaffold(title = "Video Detection", onBack = onBack) {
         ToggleRow("Enable smart video detection", settings.videoDetectionEnabled) { v ->
@@ -469,6 +489,23 @@ private fun VideoDetectionScreen(
             "When off, Smart Touch AI taps on a fixed interval the whole time the engine is running - it will not check whether a video is playing.",
             color = Color.White.copy(alpha = 0.5f),
             fontSize = 12.sp
+        )
+
+        SectionLabel("Detection point")
+        Text(
+            "A separate cyan point marking where to watch for video motion - place it over the actual video (e.g. screen center), independent of where the tap point is.",
+            color = Color.White.copy(alpha = 0.5f),
+            fontSize = 12.sp
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            SmallButton("Show detection point", onShowDetectionPoint)
+            SmallButton("Hide", onHideDetectionPoint)
+        }
+        LabeledSlider(
+            label = "Detection area size: ${settings.detectionRegionSizeDp.toInt()}dp",
+            value = settings.detectionRegionSizeDp,
+            range = 60f..600f,
+            onChange = { v -> onUpdate { it.updateDetectionRegionSize(v) } }
         )
 
         SectionLabel("Sensitivity")
