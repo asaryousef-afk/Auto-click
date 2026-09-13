@@ -1,32 +1,120 @@
-# Auto Clicker (Android)
+# Smart Touch AI
 
-تطبيق أوتوكليك بسيط، البار العائم (التولز) بيتخفي 100% من الشاشة والتحكم بيبقى من إشعار.
+A real, installable native Android app (Kotlin, Jetpack Compose, MVVM-ish structure,
+Coroutines, DataStore). Package: `com.smarttouch.ai`. Min SDK 26, target/compile SDK 34.
 
-## الطريقة الأسهل: بناء الـ APK أونلاين تلقائيًا (من غير ما تنزّل أي برنامج)
-المشروع فيه ملف جاهز `.github/workflows/build.yml` بيبني الـ APK تلقائيًا على سيرفرات GitHub. الخطوات:
+Automatically taps a configured screen position **only while a real video is actually
+playing** - not just because you're scrolling a feed - using on-device motion analysis.
+Nothing is ever uploaded anywhere; the app doesn't even request the INTERNET permission.
 
-1. اعمل حساب على [github.com](https://github.com) لو معندكش (مجاني).
-2. اعمل Repository جديد (New Repository) — سيبه Public أو Private براحتك.
-3. ارفع كل ملفات المشروع ده (فك الضغط الأول) على الـ Repository:
-   - أسهل طريقة: من صفحة الـ Repository اضغط **Add file → Upload files** واسحب كل حاجة جوه مجلد AutoClicker (يعني محتويات المجلد مش المجلد نفسه).
-4. بعد الرفع مباشرة، روح لتاب **Actions** فوق في الصفحة — هتلاقي عملية بناء ("Build APK") شغالة لوحدها، استنى دقيقتين لغاية ما تخلص (علامة صح خضرا).
-5. ادخل على العملية اللي خلصت، هتلاقي تحت في قسم **Artifacts** ملف اسمه `AutoClicker-debug-apk` — نزّله، جواه ملف الـ APK جاهز للتثبيت مباشرة على أي موبايل أندرويد.
-6. لو الموبايل رافض التثبيت، فعّل من إعدادات الموبايل "السماح بتثبيت من مصادر غير معروفة" لمتصفح/تطبيق الملفات اللي هتفتح بيه الـ APK.
+## Architecture
 
-## أو: تبنيه بنفسك على جهازك
-1. افتح المجلد كمشروع في **Android Studio** (File → Open).
-2. سيب Gradle يعمل Sync (هيحمّل المكتبات المطلوبة تلقائيًا).
-3. شغّل التطبيق على موبايل حقيقي أو إيموليتور (Android 8+)، أو اعمل **Build → Build APK(s)**.
+```
+app/src/main/java/com/smarttouch/ai/
+  MainActivity.kt                       - Compose UI: Home, Touch Settings,
+                                           Video Detection, Advanced, Debug screens
+  ServiceActionReceiver.kt               - relays notification/shortcut actions to the service
+  accessibility/
+    TouchAccessibilityService.kt         - the engine: gestures, screenshots, overlay, notification
+  detection/
+    MotionDetector.kt                    - pure frame-difference motion scoring (unit tested)
+    VideoActivityTracker.kt              - confirmation-time / no-motion-timeout debouncer (unit tested)
+    TouchIntervalCalculator.kt           - preset/custom interval resolution (unit tested)
+    Sensitivity.kt                       - LOW / MEDIUM / HIGH / CUSTOM
+  state/
+    ServiceState.kt                      - IDLE, VIDEO_DETECTING, VIDEO_ACTIVE, TOUCHING,
+                                            PAUSED, STOPPED, ERROR
+    TouchStateMachine.kt                 - deterministic transitions (unit tested)
+  data/
+    SettingsRepository.kt                - DataStore-backed persisted settings
+  shortcuts/
+    ShortcutsInfo.kt                     - see res/xml/shortcuts.xml for the actual shortcuts
+app/src/test/java/com/smarttouch/ai/     - JVM unit tests (motion detection, timeouts,
+                                            state machine, interval calculation)
+```
 
-## طريقة الاستخدام
-1. من شاشة التطبيق: فعّل "إذن الظهور فوق التطبيقات".
-2. فعّل "خدمة إتاحة الاستخدام" (Accessibility) من الإعدادات اللي هتفتح — دور على اسم "Auto Clicker" وفعّله.
-3. ارجع للتطبيق واضغط "ابدأ الأوتوكليك".
-4. هيظهر بار صغير عائم + علامة هدف (دائرة صغيرة) — اسحب علامة الهدف فوق الزرار اللي عايز يتضغط تلقائيًا.
-5. من البار: زرار التشغيل/الإيقاف يبدأ الضغط المتكرر، وزرار الإخفاء بيشيل البار وعلامة الهدف تمامًا من الشاشة (صفر بيكسل ظاهر).
-6. وقت ما البار مخفي، التحكم بيبقى من الإشعار الثابت في شريط الإشعارات: "إظهار البار" / "بدء أو إيقاف الضغط" / "إيقاف نهائي".
+## How video detection actually works (and its real limits)
 
-## ملاحظات مهمة
-- الفاصل الزمني بين كل ضغطة موجود في `OverlayService.kt` باسم `CLICK_INTERVAL_MS` (حاليًا 800 مللي ثانية) — غيّره براحتك.
-- بعض التطبيقات (خصوصًا الألعاب اللي بتستخدم حماية ضد الغش) ممكن تكتشف أو تمنع أدوات الأوتوكليك، فالاستخدام على مسؤوليتك ولازم يكون متوافق مع شروط استخدام أي تطبيق تستخدمه معاه.
-- خدمة الإتاحة (Accessibility) هي الطريقة الرسمية الوحيدة المسموحة من جوجل لمحاكاة الضغط برمجيًا من غير روت.
+On Android 11+ (`API 30+`), the accessibility service periodically calls
+`AccessibilityService.takeScreenshot()`, downsamples the result to a small 24x24
+luminance grid, and compares it to the previous sample (`MotionDetector`). If the
+difference exceeds your chosen **Sensitivity** threshold for long enough
+(**Confirmation time**), `VideoActivityTracker` marks video as ACTIVE and the touch
+loop starts. If motion stops for longer than your **No-motion timeout**, it goes back
+to just watching.
+
+**Read this part honestly:** this is a general on-screen-motion signal, not a
+guaranteed "is this actually a video" classifier. A live wallpaper, a loading spinner,
+or a very fast scroll animation can also register as motion. That's exactly why
+Sensitivity, Confirmation time, and No-motion timeout are all exposed as settings you
+can tune per app/situation, rather than the app pretending one fixed algorithm works
+perfectly everywhere.
+
+On **Android 8-10 (API 26-29)**, `takeScreenshot()` isn't available to accessibility
+services, so video detection cannot run. The app still works as a configurable
+interval tapper on those versions (visible as a note in the Video Detection screen) -
+this is a real Android platform limitation, not something this app can work around.
+
+## Safety
+
+- The tap position is clamped away from the edges of the screen (a configurable
+  margin around the display) so it can't land on the gesture-navigation strip or a
+  hardware-adjacent nav area.
+- Touching only ever happens while the state machine is in `TOUCHING`, which only
+  happens after `VIDEO_ACTIVE`, which only happens after the service is explicitly
+  started by you.
+- Stopping the service, revoking Accessibility permission, or the app process dying
+  all immediately halt tapping - there's no separate "keep tapping anyway" path.
+- The persistent notification always has a STOP action available.
+
+## Bixby / Samsung integration - what's real here
+
+Samsung does not expose a public API that lets third-party apps register arbitrary
+Bixby *voice* phrases directly. What Smart Touch AI actually implements is the
+supported Android mechanism: **static App Shortcuts** (`res/xml/shortcuts.xml`) for
+Start / Stop / Pause / Resume. On a Samsung device you can:
+
+1. Long-press the app icon to trigger a shortcut directly, or
+2. Open **Settings → Modes and Routines**, create/edit a Routine, add the action
+   **"Open app"**, choose Smart Touch AI, and pick one of these shortcuts.
+
+That's the real, documented way third-party apps hook into Routines/Bixby today -
+this app doesn't pretend to do more than that.
+
+## Permissions requested (and why)
+
+- **Accessibility service** - required to perform the tap gesture and to take the
+  periodic screenshot used for motion detection.
+- **Display over other apps (`SYSTEM_ALERT_WINDOW`)** - required only to show the
+  draggable floating dot while you're positioning your tap; you can hide it entirely
+  once configured (Clean Screen Mode).
+- **Notifications** - required (Android 13+) so the persistent status/control
+  notification can be shown.
+- No `INTERNET` permission is requested at all.
+
+## Build
+
+```
+Push to `main` and GitHub Actions (`.github/workflows/build.yml`) will:
+1. run the JVM unit tests (motion detection, timeout logic, state machine, interval calc)
+2. build a debug APK, uploaded as the `SmartTouchAI-debug-apk` artifact
+```
+
+Or open the project directly in Android Studio (File → Open) and run it on a device
+or emulator running Android 8.0 (API 26) or newer. Video detection specifically needs
+Android 11+ (API 30) to be exercised on-device.
+
+## What's intentionally not included yet
+
+- **Instrumentation/UI tests** (start/stop flow, notification actions, Clean Screen
+  Mode end-to-end) are not included in this pass - they need a configured
+  emulator/device matrix in CI, which is a meaningfully larger setup than the JVM unit
+  tests included here. The JVM unit tests cover all of the pure logic (motion
+  detection, sensitivity thresholds, timeout debouncing, the state machine, and
+  interval calculation) as requested.
+- Pinch-to-resize on the floating dot isn't implemented as a gesture; resizing is
+  exposed as an opacity/size setting screen instead (drag-to-reposition, lock, and
+  hide are all implemented as real gestures).
+- "Start on boot" persists your preference, but Android still requires you to
+  manually re-enable the accessibility service after certain restarts - this is an OS
+  security restriction that no app can bypass.

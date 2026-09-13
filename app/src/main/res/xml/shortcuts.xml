@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <shortcut
+        android:shortcutId="start_smart_touch"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="Start"
+        android:shortcutLongLabel="Start Smart Touch">
+        <intent
+            android:action="com.smarttouch.ai.action.START"
+            android:targetPackage="com.smarttouch.ai"
+            android:targetClass="com.smarttouch.ai.MainActivity" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="stop_smart_touch"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="Stop"
+        android:shortcutLongLabel="Stop Smart Touch">
+        <intent
+            android:action="com.smarttouch.ai.action.STOP"
+            android:targetPackage="com.smarttouch.ai"
+            android:targetClass="com.smarttouch.ai.MainActivity" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="pause_smart_touch"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="Pause"
+        android:shortcutLongLabel="Pause Smart Touch">
+        <intent
+            android:action="com.smarttouch.ai.action.PAUSE"
+            android:targetPackage="com.smarttouch.ai"
+            android:targetClass="com.smarttouch.ai.MainActivity" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="resume_smart_touch"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="Resume"
+        android:shortcutLongLabel="Resume Smart Touch">
+        <intent
+            android:action="com.smarttouch.ai.action.RESUME"
+            android:targetPackage="com.smarttouch.ai"
+            android:targetClass="com.smarttouch.ai.MainActivity" />
+    </shortcut>
+
+</shortcuts>

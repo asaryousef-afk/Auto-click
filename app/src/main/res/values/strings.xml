@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">Tap Ghost</string>
+    <string name="app_name">Smart Touch AI</string>
+    <string name="accessibility_service_description">Lets Smart Touch AI perform the configured tap at your chosen screen position, and read a screenshot of the screen to detect whether a video is actually playing before it starts tapping. Nothing is ever uploaded or saved outside your device.</string>
 </resources>

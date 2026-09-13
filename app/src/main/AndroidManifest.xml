@@ -2,30 +2,38 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- No INTERNET permission: everything runs on-device, nothing is ever uploaded.
+         No FOREGROUND_SERVICE permission needed: the AccessibilityService itself is
+         already kept alive by the system once the user enables it; it posts its own
+         ongoing notification directly rather than running as a separate foreground service. -->
 
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
-        android:label="Auto Clicker"
-        android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:theme="@style/Theme.SmartTouch">
 
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.SmartTouch">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
 
-        <!-- خدمة إتاحة الاستخدام: المسؤولة عن تنفيذ الضغطات الفعلية -->
         <service
-            android:name=".ClickAccessibilityService"
+            android:name=".accessibility.TouchAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />
             </intent-filter>
@@ -34,11 +42,10 @@
                 android:resource="@xml/accessibility_service_config" />
         </service>
 
-        <!-- الخدمة الأمامية المسؤولة عن البار العائم + الإشعار -->
-        <service
-            android:name=".OverlayService"
-            android:foregroundServiceType="specialUse"
+        <receiver
+            android:name=".ServiceActionReceiver"
             android:exported="false" />
 
     </application>
+
 </manifest>

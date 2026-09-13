@@ -1,0 +1,641 @@
+package com.smarttouch.ai
+
+import android.content.Intent
+import android.net.Uri
+import android.os.Bundle
+import android.provider.Settings
+import android.text.TextUtils
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.smarttouch.ai.accessibility.DebugSnapshot
+import com.smarttouch.ai.accessibility.TouchAccessibilityService
+import com.smarttouch.ai.data.SettingsRepository
+import com.smarttouch.ai.data.TouchSettings
+import com.smarttouch.ai.detection.Sensitivity
+import com.smarttouch.ai.detection.TouchIntervalCalculator
+import com.smarttouch.ai.state.ServiceState
+import kotlinx.coroutines.launch
+
+enum class Screen { HOME, TOUCH_SETTINGS, VIDEO_DETECTION, ADVANCED, DEBUG }
+
+class MainActivity : ComponentActivity() {
+
+    private lateinit var settingsRepository: SettingsRepository
+
+    private val overlayPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { /* re-checked on next recomposition */ }
+
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* no-op */ }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        settingsRepository = SettingsRepository(applicationContext)
+
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
+        handleShortcutIntent(intent)
+
+        setContent {
+            MaterialTheme {
+                var screen by remember { mutableStateOf(Screen.HOME) }
+                val settings by settingsRepository.settingsFlow.collectAsState(initial = TouchSettings())
+                var refreshTick by remember { mutableStateOf(0) }
+
+                LaunchedEffect(Unit) {
+                    while (true) {
+                        kotlinx.coroutines.delay(400)
+                        refreshTick++
+                    }
+                }
+
+                val debugSnapshot = remember(refreshTick) {
+                    TouchAccessibilityService.instance?.debugSnapshot?.value ?: DebugSnapshot()
+                }
+                val serviceRunning = remember(refreshTick) { TouchAccessibilityService.instance != null }
+
+                Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+                    when (screen) {
+                        Screen.HOME -> HomeScreen(
+                            settings = settings,
+                            debugSnapshot = debugSnapshot,
+                            serviceRunning = serviceRunning,
+                            isAccessibilityEnabled = isAccessibilityServiceEnabled(),
+                            isOverlayGranted = Settings.canDrawOverlays(this@MainActivity),
+                            onEnableAccessibility = { openAccessibilitySettings() },
+                            onEnableOverlay = { openOverlaySettings() },
+                            onStart = { TouchAccessibilityService.instance?.startEngine() },
+                            onStop = { TouchAccessibilityService.instance?.stopEngine() },
+                            onNavigate = { screen = it }
+                        )
+                        Screen.TOUCH_SETTINGS -> TouchSettingsScreen(
+                            settings = settings,
+                            onBack = { screen = Screen.HOME },
+                            onShowOverlay = { TouchAccessibilityService.instance?.showFloatingControl() },
+                            onHideOverlay = { TouchAccessibilityService.instance?.hideFloatingControl() },
+                            onUpdate = { update -> lifecycleScope.launch { update(settingsRepository) } },
+                            onTestTouch = { TouchAccessibilityService.instance?.startEngine() }
+                        )
+                        Screen.VIDEO_DETECTION -> VideoDetectionScreen(
+                            settings = settings,
+                            onBack = { screen = Screen.HOME },
+                            onUpdate = { update -> lifecycleScope.launch { update(settingsRepository) } }
+                        )
+                        Screen.ADVANCED -> AdvancedScreen(
+                            settings = settings,
+                            onBack = { screen = Screen.HOME },
+                            onUpdate = { update -> lifecycleScope.launch { update(settingsRepository) } },
+                            onOpenDebug = { screen = Screen.DEBUG },
+                            onOpenBatterySettings = { openBatteryOptimizationSettings() }
+                        )
+                        Screen.DEBUG -> DebugScreen(
+                            snapshot = debugSnapshot,
+                            onBack = { screen = Screen.ADVANCED }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleShortcutIntent(intent)
+    }
+
+    private fun handleShortcutIntent(intent: Intent?) {
+        val action = intent?.action ?: return
+        val mapped = when (action) {
+            "com.smarttouch.ai.action.START" -> TouchAccessibilityService.ACTION_START
+            "com.smarttouch.ai.action.STOP" -> TouchAccessibilityService.ACTION_STOP
+            "com.smarttouch.ai.action.PAUSE" -> TouchAccessibilityService.ACTION_PAUSE
+            "com.smarttouch.ai.action.RESUME" -> TouchAccessibilityService.ACTION_RESUME
+            else -> return
+        }
+        TouchAccessibilityService.instance?.handleAction(mapped)
+    }
+
+    private fun isAccessibilityServiceEnabled(): Boolean {
+        val expectedComponentName = "$packageName/${TouchAccessibilityService::class.java.name}"
+        val enabledServices = Settings.Secure.getString(
+            contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        ) ?: return false
+        val splitter = TextUtils.SimpleStringSplitter(':')
+        splitter.setString(enabledServices)
+        while (splitter.hasNext()) {
+            if (splitter.next().equals(expectedComponentName, ignoreCase = true)) return true
+        }
+        return false
+    }
+
+    private fun openAccessibilitySettings() {
+        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+    }
+
+    private fun openOverlaySettings() {
+        val intent = Intent(
+            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+            Uri.parse("package:$packageName")
+        )
+        overlayPermissionLauncher.launch(intent)
+    }
+
+    private fun openBatteryOptimizationSettings() {
+        runCatching {
+            startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+        }
+    }
+}
+
+// ---------------- HOME ----------------
+
+@Composable
+private fun HomeScreen(
+    settings: TouchSettings,
+    debugSnapshot: DebugSnapshot,
+    serviceRunning: Boolean,
+    isAccessibilityEnabled: Boolean,
+    isOverlayGranted: Boolean,
+    onEnableAccessibility: () -> Unit,
+    onEnableOverlay: () -> Unit,
+    onStart: () -> Unit,
+    onStop: () -> Unit,
+    onNavigate: (Screen) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(20.dp)
+    ) {
+        Text("Smart Touch AI", color = Color.White, fontSize = 24.sp)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "Taps only while a real video is actually playing.",
+            color = Color.White.copy(alpha = 0.5f),
+            fontSize = 13.sp
+        )
+
+        Spacer(Modifier.height(20.dp))
+
+        if (!isAccessibilityEnabled) {
+            PermissionCard(
+                title = "Accessibility permission needed",
+                description = "Required so Smart Touch AI can perform the configured tap and read a screenshot to detect video motion. Nothing leaves your device.",
+                actionLabel = "Enable",
+                onClick = onEnableAccessibility
+            )
+            Spacer(Modifier.height(10.dp))
+        } else if (!isOverlayGranted) {
+            PermissionCard(
+                title = "Overlay permission needed",
+                description = "Required to show the draggable touch-point control while you set up your tap position.",
+                actionLabel = "Enable",
+                onClick = onEnableOverlay
+            )
+            Spacer(Modifier.height(10.dp))
+        }
+
+        StatusCard(
+            state = debugSnapshot.state,
+            videoActive = debugSnapshot.videoActive,
+            serviceRunning = serviceRunning
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        InfoRow("Touch position", if (settings.hasTouchPosition) "${settings.touchX.toInt()}, ${settings.touchY.toInt()}" else "Not set")
+        InfoRow("Interval", "${TouchIntervalCalculator.resolve(settings.intervalMs, settings.customIntervalMs)} ms")
+        InfoRow("Sensitivity", settings.sensitivity.name)
+        InfoRow("Clean Screen Mode", if (settings.cleanScreenMode) "On" else "Off")
+
+        Spacer(Modifier.height(24.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            ActionButton(
+                label = "Start",
+                color = Color(0xFF2ECC71),
+                enabled = isAccessibilityEnabled && settings.hasTouchPosition,
+                onClick = onStart,
+                modifier = Modifier.weight(1f)
+            )
+            ActionButton(
+                label = "STOP",
+                color = Color(0xFFE74C3C),
+                enabled = true,
+                onClick = onStop,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(Modifier.height(28.dp))
+
+        NavRow("Touch Settings") { onNavigate(Screen.TOUCH_SETTINGS) }
+        NavRow("Video Detection") { onNavigate(Screen.VIDEO_DETECTION) }
+        NavRow("Advanced") { onNavigate(Screen.ADVANCED) }
+    }
+}
+
+@Composable
+private fun StatusCard(state: ServiceState, videoActive: Boolean, serviceRunning: Boolean) {
+    val color = when {
+        !serviceRunning -> Color(0xFF555555)
+        state == ServiceState.TOUCHING -> Color(0xFF2ECC71)
+        state == ServiceState.VIDEO_ACTIVE -> Color(0xFF3498DB)
+        state == ServiceState.PAUSED -> Color(0xFFF1C40F)
+        state == ServiceState.ERROR -> Color(0xFFE74C3C)
+        else -> Color(0xFF9B6BFF)
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(color.copy(alpha = 0.18f))
+            .padding(16.dp)
+    ) {
+        Text(if (serviceRunning) state.name.replace('_', ' ') else "SERVICE NOT RUNNING", color = color, fontSize = 16.sp)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            if (videoActive) "VIDEO ACTIVE" else "VIDEO INACTIVE",
+            color = Color.White.copy(alpha = 0.7f),
+            fontSize = 13.sp
+        )
+    }
+}
+
+@Composable
+private fun PermissionCard(title: String, description: String, actionLabel: String, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFF3A2A14))
+            .padding(16.dp)
+    ) {
+        Text(title, color = Color(0xFFFFC56B), fontSize = 15.sp)
+        Spacer(Modifier.height(6.dp))
+        Text(description, color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
+        Spacer(Modifier.height(10.dp))
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(10.dp))
+                .background(Color(0xFFFFC56B))
+                .clickable { onClick() }
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Text(actionLabel, color = Color.Black, fontSize = 13.sp)
+        }
+    }
+}
+
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, color = Color.White.copy(alpha = 0.5f), fontSize = 13.sp)
+        Text(value, color = Color.White, fontSize = 13.sp)
+    }
+}
+
+@Composable
+private fun ActionButton(label: String, color: Color, enabled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(if (enabled) color else color.copy(alpha = 0.3f))
+            .clickable(enabled = enabled) { onClick() }
+            .padding(vertical = 14.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(label, color = Color.White, fontSize = 15.sp)
+    }
+}
+
+@Composable
+private fun NavRow(label: String, onClick: () -> Unit) {
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color.White.copy(alpha = 0.06f))
+                .clickable { onClick() }
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(label, color = Color.White.copy(alpha = 0.85f), fontSize = 14.sp)
+            Text("\u203A", color = Color.White.copy(alpha = 0.4f), fontSize = 16.sp)
+        }
+        Spacer(Modifier.height(8.dp))
+    }
+}
+
+// ---------------- TOUCH SETTINGS ----------------
+
+@Composable
+private fun TouchSettingsScreen(
+    settings: TouchSettings,
+    onBack: () -> Unit,
+    onShowOverlay: () -> Unit,
+    onHideOverlay: () -> Unit,
+    onUpdate: (suspend (SettingsRepository) -> Unit) -> Unit,
+    onTestTouch: () -> Unit
+) {
+    ScreenScaffold(title = "Touch Settings", onBack = onBack) {
+        Text("Drag the on-screen dot to position your tap, then hide it.", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            SmallButton("Show point", onShowOverlay)
+            SmallButton("Hide point", onHideOverlay)
+            SmallButton("Test tap", onTestTouch)
+        }
+
+        SectionLabel("Interval")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TouchIntervalCalculator.presetsMs.forEach { preset ->
+                ChoiceChip(
+                    label = "${preset}ms",
+                    selected = settings.intervalMs == preset,
+                    onClick = { onUpdate { it.updateInterval(preset) } }
+                )
+            }
+            ChoiceChip(
+                label = "Custom",
+                selected = settings.intervalMs == TouchIntervalCalculator.CUSTOM_SENTINEL,
+                onClick = { onUpdate { it.updateInterval(TouchIntervalCalculator.CUSTOM_SENTINEL) } }
+            )
+        }
+        if (settings.intervalMs == TouchIntervalCalculator.CUSTOM_SENTINEL) {
+            LabeledSlider(
+                label = "Custom interval: ${settings.customIntervalMs}ms",
+                value = settings.customIntervalMs.toFloat(),
+                range = 100f..10000f,
+                onChange = { v -> onUpdate { it.updateCustomInterval(v.toLong()) } }
+            )
+        }
+
+        SectionLabel("Touch duration")
+        LabeledSlider(
+            label = "${settings.touchDurationMs}ms",
+            value = settings.touchDurationMs.toFloat(),
+            range = 10f..500f,
+            onChange = { v -> onUpdate { it.updateTouchDuration(v.toLong()) } }
+        )
+
+        SectionLabel("Overlay dot")
+        LabeledSlider(
+            label = "Opacity: ${(settings.overlayOpacity * 100).toInt()}%",
+            value = settings.overlayOpacity,
+            range = 0.15f..1f,
+            onChange = { v -> onUpdate { it.updateOverlayOpacity(v) } }
+        )
+        ToggleRow("Lock position", settings.overlayLocked) { v -> onUpdate { it.updateOverlayLocked(v) } }
+    }
+}
+
+// ---------------- VIDEO DETECTION ----------------
+
+@Composable
+private fun VideoDetectionScreen(
+    settings: TouchSettings,
+    onBack: () -> Unit,
+    onUpdate: (suspend (SettingsRepository) -> Unit) -> Unit
+) {
+    ScreenScaffold(title = "Video Detection", onBack = onBack) {
+        ToggleRow("Enable smart video detection", settings.videoDetectionEnabled) { v ->
+            onUpdate { it.updateVideoDetectionEnabled(v) }
+        }
+        Text(
+            "When off, Smart Touch AI taps on a fixed interval the whole time the engine is running - it will not check whether a video is playing.",
+            color = Color.White.copy(alpha = 0.5f),
+            fontSize = 12.sp
+        )
+
+        SectionLabel("Sensitivity")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Sensitivity.entries.forEach { s ->
+                ChoiceChip(
+                    label = s.name,
+                    selected = settings.sensitivity == s,
+                    onClick = { onUpdate { it.updateSensitivity(s) } }
+                )
+            }
+        }
+        if (settings.sensitivity == Sensitivity.CUSTOM) {
+            LabeledSlider(
+                label = "Custom threshold: ${"%.3f".format(settings.customThreshold)}",
+                value = settings.customThreshold,
+                range = 0.005f..0.15f,
+                onChange = { v -> onUpdate { it.updateCustomThreshold(v) } }
+            )
+        }
+
+        SectionLabel("Detection interval")
+        LabeledSlider(
+            label = "${settings.detectionIntervalMs}ms between frame checks",
+            value = settings.detectionIntervalMs.toFloat(),
+            range = 200f..2000f,
+            onChange = { v -> onUpdate { it.updateDetectionInterval(v.toLong()) } }
+        )
+
+        SectionLabel("Confirmation time")
+        LabeledSlider(
+            label = "${settings.confirmationTimeMs}ms of sustained motion required",
+            value = settings.confirmationTimeMs.toFloat(),
+            range = 200f..3000f,
+            onChange = { v -> onUpdate { it.updateConfirmationTime(v.toLong()) } }
+        )
+
+        SectionLabel("No-motion timeout")
+        LabeledSlider(
+            label = "${settings.noMotionTimeoutMs}ms of stillness before stopping",
+            value = settings.noMotionTimeoutMs.toFloat(),
+            range = 300f..5000f,
+            onChange = { v -> onUpdate { it.updateNoMotionTimeout(v.toLong()) } }
+        )
+
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "Note: this uses on-device screen motion analysis, not a perfect video classifier - a live wallpaper or fast animation can also register as motion. Tune sensitivity and timing above if it's too eager or too slow.",
+            color = Color.White.copy(alpha = 0.4f),
+            fontSize = 11.sp
+        )
+    }
+}
+
+// ---------------- ADVANCED ----------------
+
+@Composable
+private fun AdvancedScreen(
+    settings: TouchSettings,
+    onBack: () -> Unit,
+    onUpdate: (suspend (SettingsRepository) -> Unit) -> Unit,
+    onOpenDebug: () -> Unit,
+    onOpenBatterySettings: () -> Unit
+) {
+    ScreenScaffold(title = "Advanced", onBack = onBack) {
+        ToggleRow("Start on boot", settings.startOnBoot) { v -> onUpdate { it.updateStartOnBoot(v) } }
+        Text(
+            "Note: this saves your preference, but Android requires accessibility services to be manually re-enabled by you after some device restarts for security reasons - this is an OS restriction, not something an app can bypass.",
+            color = Color.White.copy(alpha = 0.4f),
+            fontSize = 11.sp
+        )
+
+        SectionLabel("Battery")
+        SmallButton("Battery optimization settings", onOpenBatterySettings)
+
+        SectionLabel("Debug")
+        ToggleRow("Debug mode", settings.debugMode) { v -> onUpdate { it.updateDebugMode(v) } }
+        if (settings.debugMode) {
+            SmallButton("Open debug view", onOpenDebug)
+        }
+
+        SectionLabel("Reset")
+        SmallButton(label = "Reset all settings", onClick = { onUpdate { it.resetAll() } }, danger = true)
+    }
+}
+
+// ---------------- DEBUG ----------------
+
+@Composable
+private fun DebugScreen(snapshot: DebugSnapshot, onBack: () -> Unit) {
+    ScreenScaffold(title = "Debug", onBack = onBack) {
+        InfoRow("State", snapshot.state.name)
+        InfoRow("Video active", snapshot.videoActive.toString())
+        InfoRow("Motion score", "%.4f".format(snapshot.motionScore))
+        InfoRow("Threshold", "%.4f".format(snapshot.threshold))
+        InfoRow("Touch position", "${snapshot.touchX.toInt()}, ${snapshot.touchY.toInt()}")
+        InfoRow("Sampling interval", "${snapshot.samplingIntervalMs}ms")
+        InfoRow("Last event", snapshot.lastEvent)
+    }
+}
+
+// ---------------- Shared small components ----------------
+
+@Composable
+private fun ScreenScaffold(title: String, onBack: () -> Unit, content: @Composable () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(20.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "\u2190",
+                color = Color.White,
+                fontSize = 20.sp,
+                modifier = Modifier.clickable { onBack() }.padding(end = 12.dp)
+            )
+            Text(title, color = Color.White, fontSize = 20.sp)
+        }
+        Spacer(Modifier.height(16.dp))
+        content()
+    }
+}
+
+@Composable
+private fun SectionLabel(text: String) {
+    Text(
+        text.uppercase(),
+        color = Color.White.copy(alpha = 0.35f),
+        fontSize = 11.sp,
+        modifier = Modifier.padding(top = 20.dp, bottom = 8.dp)
+    )
+}
+
+@Composable
+private fun LabeledSlider(label: String, value: Float, range: ClosedFloatingPointRange<Float>, onChange: (Float) -> Unit) {
+    Column(modifier = Modifier.padding(vertical = 4.dp)) {
+        Text(label, color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
+        Slider(value = value, onValueChange = onChange, valueRange = range)
+    }
+}
+
+@Composable
+private fun ToggleRow(label: String, value: Boolean, onChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable { onChange(!value) }
+            .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, color = Color.White.copy(alpha = 0.85f), fontSize = 14.sp)
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(50))
+                .background(if (value) Color(0xFF9B6BFF) else Color.White.copy(alpha = 0.12f))
+                .padding(horizontal = 10.dp, vertical = 4.dp)
+        ) {
+            Text(if (value) "On" else "Off", color = Color.White, fontSize = 11.sp)
+        }
+    }
+}
+
+@Composable
+private fun ChoiceChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(if (selected) Color(0xFF9B6BFF) else Color.White.copy(alpha = 0.08f))
+            .clickable { onClick() }
+            .padding(horizontal = 14.dp, vertical = 8.dp)
+    ) {
+        Text(label, color = Color.White, fontSize = 12.sp)
+    }
+}
+
+@Composable
+private fun SmallButton(label: String, onClick: () -> Unit, danger: Boolean = false) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(if (danger) Color(0xFF5A1E1E) else Color.White.copy(alpha = 0.08f))
+            .clickable { onClick() }
+            .padding(horizontal = 14.dp, vertical = 10.dp)
+    ) {
+        Text(label, color = if (danger) Color(0xFFFF8A8A) else Color.White, fontSize = 12.sp)
+    }
+}
