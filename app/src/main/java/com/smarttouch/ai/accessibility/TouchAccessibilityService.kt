@@ -71,6 +71,8 @@ class TouchAccessibilityService : AccessibilityService() {
         const val ACTION_RESUME = "com.smarttouch.ai.action.RESUME"
 
         private const val GRID_SIZE = 24 // 24x24 luminance samples per frame - cheap and battery-light
+        private const val TAP_VISUAL_SETTLE_MS = 400L // ignore frames captured just after our own tap,
+        // so the tap's own visual ripple/feedback isn't mistaken for "video motion"
     }
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -96,6 +98,7 @@ class TouchAccessibilityService : AccessibilityService() {
     private var debugBadgeParams: WindowManager.LayoutParams? = null
 
     private val mainHandler = Handler(Looper.getMainLooper())
+    @Volatile private var lastTapAtMs = 0L
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -244,7 +247,10 @@ class TouchAccessibilityService : AccessibilityService() {
                 }
 
                 val frame = captureLuminanceFrame()
-                if (frame != null) {
+                val sinceLastTapMs = System.currentTimeMillis() - lastTapAtMs
+                val ignoreThisFrame = sinceLastTapMs in 0..TAP_VISUAL_SETTLE_MS
+
+                if (frame != null && !ignoreThisFrame) {
                     val score = motionDetector.analyzeFrame(frame)
                     val motionDetected = motionDetector.isMotionSignificant(score)
                     val active = activityTracker.onFrameAnalyzed(motionDetected, System.currentTimeMillis())
@@ -293,6 +299,7 @@ class TouchAccessibilityService : AccessibilityService() {
         val stroke = GestureDescription.StrokeDescription(path, 0L, duration)
         val gesture = GestureDescription.Builder().addStroke(stroke).build()
         dispatchGesture(gesture, null, null)
+        lastTapAtMs = System.currentTimeMillis()
     }
 
     /**
@@ -313,7 +320,7 @@ class TouchAccessibilityService : AccessibilityService() {
     private fun safeContentBounds(): Rect? {
         windowManager ?: return null
         val metrics: DisplayMetrics = resources.displayMetrics
-        val navBarMargin = (48 * metrics.density).toInt() // keep clear of gesture/nav area
+        val navBarMargin = (16 * metrics.density).toInt() // keep clear of the very edge only
         return Rect(
             navBarMargin,
             navBarMargin,
@@ -413,12 +420,12 @@ class TouchAccessibilityService : AccessibilityService() {
         // Build the dot as a plain View with a directly-set background color, sized in
         // raw pixels - this avoids any XML-inflation / shape-drawable rendering edge
         // cases and is the most reliable way to guarantee something visible appears.
-        val sizePx = (28 * resources.displayMetrics.density).toInt()
+        val sizePx = (3 * resources.displayMetrics.density).toInt()
         val view = View(this).apply {
             background = android.graphics.drawable.GradientDrawable().apply {
                 shape = android.graphics.drawable.GradientDrawable.OVAL
                 setColor(android.graphics.Color.parseColor("#C85AFF"))
-                setStroke((2 * resources.displayMetrics.density).toInt(), android.graphics.Color.WHITE)
+                setStroke((1 * resources.displayMetrics.density).toInt().coerceAtLeast(1), android.graphics.Color.WHITE)
             }
             elevation = 999f
         }
