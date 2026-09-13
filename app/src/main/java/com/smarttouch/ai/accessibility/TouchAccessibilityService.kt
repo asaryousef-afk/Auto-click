@@ -413,9 +413,13 @@ class TouchAccessibilityService : AccessibilityService() {
         // Build the dot as a plain View with a directly-set background color, sized in
         // raw pixels - this avoids any XML-inflation / shape-drawable rendering edge
         // cases and is the most reliable way to guarantee something visible appears.
-        val sizePx = (70 * resources.displayMetrics.density).toInt()
+        val sizePx = (28 * resources.displayMetrics.density).toInt()
         val view = View(this).apply {
-            setBackgroundColor(android.graphics.Color.RED)
+            background = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.OVAL
+                setColor(android.graphics.Color.parseColor("#C85AFF"))
+                setStroke((2 * resources.displayMetrics.density).toInt(), android.graphics.Color.WHITE)
+            }
             elevation = 999f
         }
 
@@ -430,8 +434,9 @@ class TouchAccessibilityService : AccessibilityService() {
 
         val existing = currentSettings
         val metrics = resources.displayMetrics
+        val bounds = safeContentBounds()
         val defaultX = metrics.widthPixels / 2
-        val defaultY = metrics.heightPixels / 2
+        val defaultY = bounds?.bottom ?: (metrics.heightPixels - (100 * metrics.density).toInt())
         params.x = if (existing.hasTouchPosition) existing.touchX.toInt() else defaultX
         params.y = if (existing.hasTouchPosition) existing.touchY.toInt() else defaultY
 
