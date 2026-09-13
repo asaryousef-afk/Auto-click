@@ -124,7 +124,9 @@ class MainActivity : ComponentActivity() {
                             onBack = { screen = Screen.HOME },
                             onUpdate = { update -> lifecycleScope.launch { update(settingsRepository) } },
                             onOpenDebug = { screen = Screen.DEBUG },
-                            onOpenBatterySettings = { openBatteryOptimizationSettings() }
+                            onOpenBatterySettings = { openBatteryOptimizationSettings() },
+                            onShowLiveOverlay = { TouchAccessibilityService.instance?.showLiveMotionOverlay() },
+                            onHideLiveOverlay = { TouchAccessibilityService.instance?.hideLiveMotionOverlay() }
                         )
                         Screen.DEBUG -> DebugScreen(
                             snapshot = debugSnapshot,
@@ -512,7 +514,9 @@ private fun AdvancedScreen(
     onBack: () -> Unit,
     onUpdate: (suspend (SettingsRepository) -> Unit) -> Unit,
     onOpenDebug: () -> Unit,
-    onOpenBatterySettings: () -> Unit
+    onOpenBatterySettings: () -> Unit,
+    onShowLiveOverlay: () -> Unit,
+    onHideLiveOverlay: () -> Unit
 ) {
     ScreenScaffold(title = "Advanced", onBack = onBack) {
         ToggleRow("Start on boot", settings.startOnBoot) { v -> onUpdate { it.updateStartOnBoot(v) } }
@@ -521,6 +525,17 @@ private fun AdvancedScreen(
             color = Color.White.copy(alpha = 0.4f),
             fontSize = 11.sp
         )
+
+        SectionLabel("Live motion overlay")
+        Text(
+            "Shows a small badge anywhere on screen with the live motion score and state, so you can see what the detector is doing while using another app.",
+            color = Color.White.copy(alpha = 0.5f),
+            fontSize = 12.sp
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            SmallButton("Show overlay", onShowLiveOverlay)
+            SmallButton("Hide overlay", onHideLiveOverlay)
+        }
 
         SectionLabel("Battery")
         SmallButton("Battery optimization settings", onOpenBatterySettings)

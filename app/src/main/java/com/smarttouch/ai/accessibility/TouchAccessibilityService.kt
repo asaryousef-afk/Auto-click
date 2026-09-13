@@ -24,6 +24,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
+import android.widget.Toast
 import com.smarttouch.ai.MainActivity
 import com.smarttouch.ai.R
 import com.smarttouch.ai.ServiceActionReceiver
@@ -91,6 +92,9 @@ class TouchAccessibilityService : AccessibilityService() {
     private var floatingParams: WindowManager.LayoutParams? = null
     private var overlayVisible = false
 
+    private var debugBadgeView: View? = null
+    private var debugBadgeParams: WindowManager.LayoutParams? = null
+
     private val mainHandler = Handler(Looper.getMainLooper())
 
     override fun onServiceConnected() {
@@ -122,6 +126,7 @@ class TouchAccessibilityService : AccessibilityService() {
         instance = null
         stopEngine()
         removeFloatingView()
+        removeDebugBadge()
         serviceScope.cancel()
         super.onDestroy()
     }
@@ -197,6 +202,17 @@ class TouchAccessibilityService : AccessibilityService() {
 
     fun hideFloatingControl() {
         mainHandler.post { removeFloatingView() }
+    }
+
+    /** A tiny always-visible badge showing live motion score / state anywhere on
+     * screen, so you can see what the detector is doing while using another app -
+     * not just inside the Debug screen. */
+    fun showLiveMotionOverlay() {
+        mainHandler.post { addDebugBadgeIfNeeded() }
+    }
+
+    fun hideLiveMotionOverlay() {
+        mainHandler.post { removeDebugBadge() }
     }
 
     // ---------- Detection loop ----------
@@ -378,12 +394,16 @@ class TouchAccessibilityService : AccessibilityService() {
             samplingIntervalMs = currentSettings.detectionIntervalMs,
             lastEvent = lastEvent
         )
+        mainHandler.post { updateDebugBadgeText() }
     }
 
     // ---------- Floating control overlay ----------
 
     private fun addFloatingViewIfNeeded() {
-        if (floatingView != null) return
+        if (floatingView != null) {
+            Toast.makeText(this, "Point already showing at ${floatingParams?.x}, ${floatingParams?.y}", Toast.LENGTH_SHORT).show()
+            return
+        }
         val wm = windowManager ?: return
 
         val inflater = LayoutInflater.from(this)
@@ -409,9 +429,12 @@ class TouchAccessibilityService : AccessibilityService() {
 
         val added = runCatching { wm.addView(view, params) }
         if (added.isFailure) {
+            val reason = added.exceptionOrNull()?.javaClass?.simpleName ?: "unknown"
+            Toast.makeText(this, "Couldn't show the point: $reason", Toast.LENGTH_LONG).show()
             updateNotification("Overlay permission missing - enable it in app settings", videoActive = false)
             return
         }
+        Toast.makeText(this, "Point shown at ${params.x}, ${params.y}", Toast.LENGTH_SHORT).show()
         floatingView = view
         floatingParams = params
         overlayVisible = true
@@ -421,16 +444,64 @@ class TouchAccessibilityService : AccessibilityService() {
 
     private fun removeFloatingView() {
         val wm = windowManager ?: return
+        if (floatingView == null) {
+            Toast.makeText(this, "No point currently showing", Toast.LENGTH_SHORT).show()
+            return
+        }
         floatingView?.let { runCatching { wm.removeView(it) } }
         floatingView = null
         floatingParams = null
         overlayVisible = false
+        Toast.makeText(this, "Point hidden", Toast.LENGTH_SHORT).show()
     }
 
     private fun applyOverlayVisuals(settings: TouchSettings) {
         val view = floatingView ?: return
         view.alpha = settings.overlayOpacity.coerceIn(0.15f, 1f)
         view.visibility = if (settings.cleanScreenMode) View.GONE else View.VISIBLE
+    }
+
+    private fun addDebugBadgeIfNeeded() {
+        if (debugBadgeView != null) return
+        val wm = windowManager ?: return
+
+        val inflater = LayoutInflater.from(this)
+        val view = inflater.inflate(R.layout.overlay_debug_badge, null)
+
+        val params = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+            PixelFormat.TRANSLUCENT
+        )
+        params.gravity = Gravity.TOP or Gravity.END
+        params.x = 8
+        params.y = 120
+
+        val added = runCatching { wm.addView(view, params) }
+        if (added.isFailure) {
+            Toast.makeText(this, "Couldn't show live overlay: ${added.exceptionOrNull()?.javaClass?.simpleName}", Toast.LENGTH_LONG).show()
+            return
+        }
+        debugBadgeView = view
+        debugBadgeParams = params
+        updateDebugBadgeText()
+    }
+
+    private fun removeDebugBadge() {
+        val wm = windowManager ?: return
+        debugBadgeView?.let { runCatching { wm.removeView(it) } }
+        debugBadgeView = null
+        debugBadgeParams = null
+    }
+
+    private fun updateDebugBadgeText() {
+        val badge = debugBadgeView as? android.widget.TextView ?: return
+        val snap = _debugSnapshot.value
+        badge.text = "%s | motion %.3f / %.3f | %s".format(
+            snap.state.name, snap.motionScore, snap.threshold, snap.lastEvent
+        )
     }
 
     private fun setupDragListener(view: View, params: WindowManager.LayoutParams) {

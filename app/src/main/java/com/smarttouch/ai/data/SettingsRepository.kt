@@ -16,8 +16,8 @@ private val Context.dataStore by preferencesDataStore(name = "smart_touch_settin
 data class TouchSettings(
     val touchX: Float = -1f,
     val touchY: Float = -1f,
-    val intervalMs: Long = 1000L,
-    val customIntervalMs: Long = 1000L,
+    val intervalMs: Long = 2000L,
+    val customIntervalMs: Long = 2000L,
     val touchDurationMs: Long = 50L,
     val overlayOpacity: Float = 1f,
     val overlayLocked: Boolean = false,
@@ -59,8 +59,8 @@ class SettingsRepository(private val context: Context) {
         TouchSettings(
             touchX = prefs[Keys.TOUCH_X] ?: -1f,
             touchY = prefs[Keys.TOUCH_Y] ?: -1f,
-            intervalMs = prefs[Keys.INTERVAL_MS] ?: 1000L,
-            customIntervalMs = prefs[Keys.CUSTOM_INTERVAL_MS] ?: 1000L,
+            intervalMs = prefs[Keys.INTERVAL_MS] ?: 2000L,
+            customIntervalMs = prefs[Keys.CUSTOM_INTERVAL_MS] ?: 2000L,
             touchDurationMs = prefs[Keys.TOUCH_DURATION_MS] ?: 50L,
             overlayOpacity = prefs[Keys.OVERLAY_OPACITY] ?: 1f,
             overlayLocked = prefs[Keys.OVERLAY_LOCKED] ?: false,
