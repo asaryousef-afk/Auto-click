@@ -410,15 +410,21 @@ class TouchAccessibilityService : AccessibilityService() {
         }
         val wm = windowManager ?: return
 
-        val inflater = LayoutInflater.from(this)
-        val view = inflater.inflate(R.layout.overlay_floating_dot, null)
+        // Build the dot as a plain View with a directly-set background color, sized in
+        // raw pixels - this avoids any XML-inflation / shape-drawable rendering edge
+        // cases and is the most reliable way to guarantee something visible appears.
+        val sizePx = (70 * resources.displayMetrics.density).toInt()
+        val view = View(this).apply {
+            setBackgroundColor(android.graphics.Color.RED)
+            elevation = 999f
+        }
 
         val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
+            sizePx,
+            sizePx,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
-            PixelFormat.TRANSLUCENT
+            PixelFormat.OPAQUE
         )
         params.gravity = Gravity.TOP or Gravity.START
 
