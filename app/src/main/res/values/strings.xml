@@ -1,4 +1,12 @@
 <resources>
     <string name="app_name">Smart Touch AI</string>
     <string name="accessibility_service_description">Lets Smart Touch AI perform the configured tap at your chosen screen position, and read a screenshot of the screen to detect whether a video is actually playing before it starts tapping. Nothing is ever uploaded or saved outside your device.</string>
+    <string name="shortcut_start_short">Start</string>
+    <string name="shortcut_start_long">Start Smart Touch</string>
+    <string name="shortcut_stop_short">Stop</string>
+    <string name="shortcut_stop_long">Stop Smart Touch</string>
+    <string name="shortcut_pause_short">Pause</string>
+    <string name="shortcut_pause_long">Pause Smart Touch</string>
+    <string name="shortcut_resume_short">Resume</string>
+    <string name="shortcut_resume_long">Resume Smart Touch</string>
 </resources>
