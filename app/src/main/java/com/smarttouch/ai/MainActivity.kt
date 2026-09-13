@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.text.TextUtils
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -109,10 +110,10 @@ class MainActivity : ComponentActivity() {
                         Screen.TOUCH_SETTINGS -> TouchSettingsScreen(
                             settings = settings,
                             onBack = { screen = Screen.HOME },
-                            onShowOverlay = { TouchAccessibilityService.instance?.showFloatingControl() },
-                            onHideOverlay = { TouchAccessibilityService.instance?.hideFloatingControl() },
+                            onShowOverlay = { callServiceOrWarn { it.showFloatingControl() } },
+                            onHideOverlay = { callServiceOrWarn { it.hideFloatingControl() } },
                             onUpdate = { update -> lifecycleScope.launch { update(settingsRepository) } },
-                            onTestTouch = { TouchAccessibilityService.instance?.testSingleTap() }
+                            onTestTouch = { callServiceOrWarn { it.testSingleTap() } }
                         )
                         Screen.VIDEO_DETECTION -> VideoDetectionScreen(
                             settings = settings,
@@ -185,6 +186,22 @@ class MainActivity : ComponentActivity() {
         runCatching {
             startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
         }
+    }
+
+    /** Confirms the accessibility service is actually connected before forwarding an
+     * action to it - if it isn't, tells the user clearly instead of silently doing
+     * nothing (which is what a plain `instance?.foo()` would do). */
+    private fun callServiceOrWarn(action: (TouchAccessibilityService) -> Unit) {
+        val service = TouchAccessibilityService.instance
+        if (service == null) {
+            Toast.makeText(
+                this,
+                "Accessibility service isn't connected. Turn it off and on again in Settings > Accessibility.",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+        action(service)
     }
 }
 
