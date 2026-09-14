@@ -128,6 +128,9 @@ class TouchAccessibilityService : AccessibilityService() {
                 activityTracker.updateTimings(settings.confirmationTimeMs, settings.noMotionTimeoutMs)
                 mainHandler.post {
                     applyOverlayVisuals(settings)
+                    if (!isLandscapeSafeModeActive) {
+                        repositionDotFromSettings(settings)
+                    }
                 }
             }
         }
@@ -757,6 +760,23 @@ class TouchAccessibilityService : AccessibilityService() {
         val view = floatingView ?: return
         view.alpha = settings.overlayOpacity.coerceIn(0.15f, 1f)
         view.visibility = if (settings.cleanScreenMode) View.GONE else View.VISIBLE
+    }
+
+    /**
+     * Moves the visible dot to match settings.touchX/Y whenever it changes from
+     * somewhere other than dragging the dot itself - e.g. the nudge buttons in
+     * Touch Settings. Previously only applyOverlayVisuals reacted to settings
+     * changes (alpha/visibility only), so pressing a nudge button silently wrote
+     * the new position to disk but the on-screen dot never actually moved,
+     * making the buttons look like they weren't doing anything.
+     */
+    private fun repositionDotFromSettings(settings: TouchSettings) {
+        val view = floatingView ?: return
+        val params = floatingParams ?: return
+        if (!settings.hasTouchPosition) return
+        params.x = settings.touchX.toInt()
+        params.y = settings.touchY.toInt()
+        runCatching { windowManager?.updateViewLayout(view, params) }
     }
 
     private fun addDebugBadgeIfNeeded() {
