@@ -240,10 +240,10 @@ class TouchAccessibilityService : AccessibilityService() {
         mainHandler.post {
             val view = floatingView
             val params = floatingParams
-            val settings = currentSettings
-            if (view != null && params != null && settings.hasTouchPosition) {
-                params.x = settings.touchX.toInt()
-                params.y = settings.touchY.toInt()
+            val point = safeTouchPoint()
+            if (view != null && params != null && point != null) {
+                params.x = point.first.toInt()
+                params.y = point.second.toInt()
                 runCatching { windowManager?.updateViewLayout(view, params) }
             }
         }
@@ -518,8 +518,14 @@ class TouchAccessibilityService : AccessibilityService() {
      * there's no stale state to get stuck in.
      */
     private fun safeTouchPoint(): Pair<Float, Float>? {
-        val isLandscapeNow = resources.configuration.orientation ==
-            android.content.res.Configuration.ORIENTATION_LANDSCAPE
+        // resources.configuration.orientation is read from this Service's own
+        // Resources object, which - like resources.displayMetrics earlier today -
+        // isn't reliably live: it can report a stale orientation for a bit after
+        // the device has actually rotated back, which left the dot computed as if
+        // still in landscape even after returning to portrait. Comparing the real
+        // window bounds (already proven stable across apps/foreground state) is a
+        // direct, unambiguous test instead of trusting a cached Configuration flag.
+        val isLandscapeNow = currentScreenWidthPx() > currentScreenHeightPx()
 
         if (isLandscapeNow) {
             return computeLandscapeSafePoint()
