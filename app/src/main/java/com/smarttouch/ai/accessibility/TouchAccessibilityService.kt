@@ -160,13 +160,18 @@ class TouchAccessibilityService : AccessibilityService() {
     private fun enterLandscapeSafeMode() {
         isLandscapeSafeModeActive = true
 
-        // The literal corner pixel - as close to (0,0) as the system will dispatch a
-        // gesture to. Virtually no app places an interactive control exactly on the
-        // extreme edge pixel, so this is the lowest-risk coordinate available. (No
-        // on-screen coordinate can be mathematically guaranteed risk-free for every
-        // possible app layout, but this is as close as it gets.)
-        val safeX = 1f
-        val safeY = 1f
+        // The literal corner pixel (1,1) used to sit inside the system gesture inset
+        // (the edge-swipe zone for Back/notifications), so the OS swallowed the
+        // gesture before it ever reached the app - the tap landed on nothing, which
+        // is why video playback kept freezing. Instead, step in just past the real
+        // gesture-inset boundary reported by the system (or a generous fallback
+        // margin on older APIs where that inset isn't queryable), so the tap lands
+        // inside the app's actual touchable content, in the corner, away from
+        // play/pause/seek controls.
+        val insets = currentSystemGestureInsets()
+        val fallbackMarginPx = (24 * resources.displayMetrics.density) // ~24dp
+        val safeX = (insets?.left?.toFloat() ?: fallbackMarginPx) + (4 * resources.displayMetrics.density)
+        val safeY = (insets?.top?.toFloat() ?: fallbackMarginPx) + (4 * resources.displayMetrics.density)
 
         landscapeOverrideX = safeX
         landscapeOverrideY = safeY
@@ -179,6 +184,27 @@ class TouchAccessibilityService : AccessibilityService() {
                 params.y = safeY.toInt()
                 runCatching { windowManager?.updateViewLayout(view, params) }
             }
+        }
+    }
+
+    /**
+     * Reads the device's real system-gesture inset (the edge-swipe zone reserved
+     * for Back/Home/notifications) so we know exactly how far in from the corner a
+     * dispatched gesture actually reaches the app instead of being swallowed by the
+     * OS. Returns null on API < 30 or if it can't be read, in which case the caller
+     * falls back to a fixed margin.
+     */
+    private fun currentSystemGestureInsets(): Rect? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
+        return try {
+            val wm = windowManager ?: return null
+            val metrics = wm.currentWindowMetrics
+            val gestureInsets = metrics.windowInsets.getInsets(
+                android.view.WindowInsets.Type.systemGestures()
+            )
+            Rect(gestureInsets.left, gestureInsets.top, gestureInsets.right, gestureInsets.bottom)
+        } catch (e: Exception) {
+            null
         }
     }
 
