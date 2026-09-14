@@ -40,6 +40,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.smarttouch.ai.accessibility.DebugSnapshot
@@ -203,7 +204,7 @@ class MainActivity : ComponentActivity() {
         if (service == null) {
             Toast.makeText(
                 this,
-                "Accessibility service isn't connected. Turn it off and on again in Settings > Accessibility.",
+                getString(R.string.toast_service_not_connected),
                 Toast.LENGTH_LONG
             ).show()
             return
@@ -233,10 +234,10 @@ private fun HomeScreen(
             .verticalScroll(rememberScrollState())
             .padding(20.dp)
     ) {
-        Text("Vigil", color = Color.White, fontSize = 24.sp)
+        Text(stringResource(R.string.app_name), color = Color.White, fontSize = 24.sp)
         Spacer(Modifier.height(4.dp))
         Text(
-            "Taps only while a real video is actually playing.",
+            stringResource(R.string.home_tagline),
             color = Color.White.copy(alpha = 0.5f),
             fontSize = 13.sp
         )
@@ -245,17 +246,17 @@ private fun HomeScreen(
 
         if (!isAccessibilityEnabled) {
             PermissionCard(
-                title = "Accessibility permission needed",
-                description = "Required so Vigil can perform the configured tap and read a screenshot to detect video motion. Nothing leaves your device.",
-                actionLabel = "Enable",
+                title = stringResource(R.string.perm_accessibility_title),
+                description = stringResource(R.string.perm_accessibility_desc),
+                actionLabel = stringResource(R.string.perm_enable),
                 onClick = onEnableAccessibility
             )
             Spacer(Modifier.height(10.dp))
         } else if (!isOverlayGranted) {
             PermissionCard(
-                title = "Overlay permission needed",
-                description = "Required to show the draggable touch-point control while you set up your tap position.",
-                actionLabel = "Enable",
+                title = stringResource(R.string.perm_overlay_title),
+                description = stringResource(R.string.perm_overlay_desc),
+                actionLabel = stringResource(R.string.perm_enable),
                 onClick = onEnableOverlay
             )
             Spacer(Modifier.height(10.dp))
@@ -269,23 +270,23 @@ private fun HomeScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        InfoRow("Touch position", if (settings.hasTouchPosition) "${settings.touchX.toInt()}, ${settings.touchY.toInt()}" else "Not set")
-        InfoRow("Interval", "${TouchIntervalCalculator.resolve(settings.intervalMs, settings.customIntervalMs)} ms")
-        InfoRow("Sensitivity", settings.sensitivity.name)
-        InfoRow("Clean Screen Mode", if (settings.cleanScreenMode) "On" else "Off")
+        InfoRow(stringResource(R.string.label_touch_position), if (settings.hasTouchPosition) "${settings.touchX.toInt()}, ${settings.touchY.toInt()}" else stringResource(R.string.value_not_set))
+        InfoRow(stringResource(R.string.label_interval), stringResource(R.string.value_ms, TouchIntervalCalculator.resolve(settings.intervalMs, settings.customIntervalMs)))
+        InfoRow(stringResource(R.string.label_sensitivity), settings.sensitivity.name)
+        InfoRow(stringResource(R.string.label_clean_screen_mode), if (settings.cleanScreenMode) stringResource(R.string.on) else stringResource(R.string.off))
 
         Spacer(Modifier.height(24.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             ActionButton(
-                label = "Start",
+                label = stringResource(R.string.btn_start),
                 color = Color(0xFF2ECC71),
                 enabled = isAccessibilityEnabled && settings.hasTouchPosition,
                 onClick = onStart,
                 modifier = Modifier.weight(1f)
             )
             ActionButton(
-                label = "STOP",
+                label = stringResource(R.string.btn_stop),
                 color = Color(0xFFE74C3C),
                 enabled = true,
                 onClick = onStop,
@@ -295,9 +296,9 @@ private fun HomeScreen(
 
         Spacer(Modifier.height(28.dp))
 
-        NavRow("Touch Settings") { onNavigate(Screen.TOUCH_SETTINGS) }
-        NavRow("Video Detection") { onNavigate(Screen.VIDEO_DETECTION) }
-        NavRow("Advanced") { onNavigate(Screen.ADVANCED) }
+        NavRow(stringResource(R.string.nav_touch_settings)) { onNavigate(Screen.TOUCH_SETTINGS) }
+        NavRow(stringResource(R.string.nav_video_detection)) { onNavigate(Screen.VIDEO_DETECTION) }
+        NavRow(stringResource(R.string.nav_advanced)) { onNavigate(Screen.ADVANCED) }
     }
 }
 
@@ -318,10 +319,10 @@ private fun StatusCard(state: ServiceState, videoActive: Boolean, serviceRunning
             .background(color.copy(alpha = 0.18f))
             .padding(16.dp)
     ) {
-        Text(if (serviceRunning) state.name.replace('_', ' ') else "SERVICE NOT RUNNING", color = color, fontSize = 16.sp)
+        Text(if (serviceRunning) state.name.replace('_', ' ') else stringResource(R.string.status_not_running), color = color, fontSize = 16.sp)
         Spacer(Modifier.height(4.dp))
         Text(
-            if (videoActive) "VIDEO ACTIVE" else "VIDEO INACTIVE",
+            if (videoActive) stringResource(R.string.status_video_active) else stringResource(R.string.status_video_inactive),
             color = Color.White.copy(alpha = 0.7f),
             fontSize = 13.sp
         )
@@ -410,7 +411,7 @@ private fun TouchSettingsScreen(
     onGrowDot: () -> Unit,
     onShrinkDot: () -> Unit
 ) {
-    ScreenScaffold(title = "Touch Settings", onBack = onBack) {
+    ScreenScaffold(title = stringResource(R.string.nav_touch_settings), onBack = onBack) {
         Text("Drag the on-screen dot to position your tap, then hide it.", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -523,7 +524,7 @@ private fun VideoDetectionScreen(
     onShowDetectionPoint: () -> Unit,
     onHideDetectionPoint: () -> Unit
 ) {
-    ScreenScaffold(title = "Video Detection", onBack = onBack) {
+    ScreenScaffold(title = stringResource(R.string.nav_video_detection), onBack = onBack) {
         ToggleRow("Enable smart video detection", settings.videoDetectionEnabled) { v ->
             onUpdate { it.updateVideoDetectionEnabled(v) }
         }
@@ -630,7 +631,7 @@ private fun AdvancedScreen(
     onShowLiveOverlay: () -> Unit,
     onHideLiveOverlay: () -> Unit
 ) {
-    ScreenScaffold(title = "Advanced", onBack = onBack) {
+    ScreenScaffold(title = stringResource(R.string.nav_advanced), onBack = onBack) {
         ToggleRow("Start on boot", settings.startOnBoot) { v -> onUpdate { it.updateStartOnBoot(v) } }
         Text(
             "Note: this saves your preference, but Android requires accessibility services to be manually re-enabled by you after some device restarts for security reasons - this is an OS restriction, not something an app can bypass.",
@@ -667,7 +668,7 @@ private fun AdvancedScreen(
 
 @Composable
 private fun DebugScreen(snapshot: DebugSnapshot, onBack: () -> Unit) {
-    ScreenScaffold(title = "Debug", onBack = onBack) {
+    ScreenScaffold(title = stringResource(R.string.screen_title_debug), onBack = onBack) {
         InfoRow("State", snapshot.state.name)
         InfoRow("Video active", snapshot.videoActive.toString())
         InfoRow("Motion score", "%.4f".format(snapshot.motionScore))
@@ -737,7 +738,7 @@ private fun ToggleRow(label: String, value: Boolean, onChange: (Boolean) -> Unit
                 .background(if (value) Color(0xFF9B6BFF) else Color.White.copy(alpha = 0.12f))
                 .padding(horizontal = 10.dp, vertical = 4.dp)
         ) {
-            Text(if (value) "On" else "Off", color = Color.White, fontSize = 11.sp)
+            Text(if (value) stringResource(R.string.on) else stringResource(R.string.off), color = Color.White, fontSize = 11.sp)
         }
     }
 }

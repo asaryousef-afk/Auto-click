@@ -2,11 +2,45 @@
     <string name="app_name">Vigil</string>
     <string name="accessibility_service_description">Lets Vigil perform the configured tap at your chosen screen position, and read a screenshot of the screen to detect whether a video is actually playing before it starts tapping. Nothing is ever uploaded or saved outside your device.</string>
     <string name="shortcut_start_short">Start</string>
-    <string name="shortcut_start_long">Start Smart Touch</string>
+    <string name="shortcut_start_long">Start Vigil</string>
     <string name="shortcut_stop_short">Stop</string>
-    <string name="shortcut_stop_long">Stop Smart Touch</string>
+    <string name="shortcut_stop_long">Stop Vigil</string>
     <string name="shortcut_pause_short">Pause</string>
-    <string name="shortcut_pause_long">Pause Smart Touch</string>
+    <string name="shortcut_pause_long">Pause Vigil</string>
     <string name="shortcut_resume_short">Resume</string>
-    <string name="shortcut_resume_long">Resume Smart Touch</string>
+    <string name="shortcut_resume_long">Resume Vigil</string>
+
+    <!-- Home screen -->
+    <string name="home_tagline">Taps only while a real video is actually playing.</string>
+    <string name="perm_accessibility_title">Accessibility permission needed</string>
+    <string name="perm_accessibility_desc">Required so Vigil can perform the configured tap and read a screenshot to detect video motion. Nothing leaves your device.</string>
+    <string name="perm_overlay_title">Overlay permission needed</string>
+    <string name="perm_overlay_desc">Required to show the draggable touch-point control while you set up your tap position.</string>
+    <string name="perm_enable">Enable</string>
+    <string name="status_not_running">SERVICE NOT RUNNING</string>
+    <string name="status_video_active">VIDEO ACTIVE</string>
+    <string name="status_video_inactive">VIDEO INACTIVE</string>
+    <string name="label_touch_position">Touch position</string>
+    <string name="value_not_set">Not set</string>
+    <string name="label_interval">Interval</string>
+    <string name="value_ms">%1$d ms</string>
+    <string name="label_sensitivity">Sensitivity</string>
+    <string name="label_clean_screen_mode">Clean Screen Mode</string>
+    <string name="on">On</string>
+    <string name="off">Off</string>
+    <string name="btn_start">Start</string>
+    <string name="btn_stop">STOP</string>
+    <string name="nav_touch_settings">Touch Settings</string>
+    <string name="nav_video_detection">Video Detection</string>
+    <string name="nav_advanced">Advanced</string>
+    <string name="screen_title_debug">Debug</string>
+
+    <!-- Toasts / service messages -->
+    <string name="toast_service_not_connected">Accessibility service isn\'t connected. Turn it off and on again in Settings &gt; Accessibility.</string>
+    <string name="toast_enable_overlay_settings_first">Enable \"Display over other apps\" for Vigil in Settings first</string>
+    <string name="toast_enable_overlay_first">Enable \"Display over other apps\" for Vigil first</string>
+
+    <!-- Notification -->
+    <string name="notif_channel_name">Vigil status</string>
+    <string name="notif_title">Vigil - %1$s</string>
 </resources>

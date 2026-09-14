@@ -701,7 +701,7 @@ class TouchAccessibilityService : AccessibilityService() {
             return
         }
         if (!android.provider.Settings.canDrawOverlays(this)) {
-            Toast.makeText(this, "Enable \"Display over other apps\" for Vigil in Settings first", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.toast_enable_overlay_settings_first), Toast.LENGTH_LONG).show()
             return
         }
         val wm = windowManager ?: return
@@ -779,7 +779,7 @@ class TouchAccessibilityService : AccessibilityService() {
             return
         }
         if (!android.provider.Settings.canDrawOverlays(this)) {
-            Toast.makeText(this, "Enable \"Display over other apps\" for Vigil first", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.toast_enable_overlay_first), Toast.LENGTH_LONG).show()
             return
         }
         val wm = windowManager ?: return
@@ -970,7 +970,7 @@ class TouchAccessibilityService : AccessibilityService() {
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Vigil status",
+            getString(R.string.notif_channel_name),
             NotificationManager.IMPORTANCE_LOW
         )
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
@@ -989,10 +989,10 @@ class TouchAccessibilityService : AccessibilityService() {
             return PendingIntent.getBroadcast(this, requestCode, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         }
 
-        val videoStatus = if (videoActive) "VIDEO ACTIVE" else "VIDEO INACTIVE"
+        val videoStatus = if (videoActive) getString(R.string.status_video_active) else getString(R.string.status_video_inactive)
 
         val builder = Notification.Builder(this, CHANNEL_ID)
-            .setContentTitle("Vigil - $statusText")
+            .setContentTitle(getString(R.string.notif_title, statusText))
             .setContentText(videoStatus)
             .setSmallIcon(R.drawable.ic_notification_eye_of_horus)
             .setOngoing(true)

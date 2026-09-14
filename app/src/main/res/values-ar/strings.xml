@@ -1,0 +1,46 @@
+<resources>
+    <string name="app_name">Vigil</string>
+    <string name="accessibility_service_description">يسمح لتطبيق Vigil بتنفيذ النقرة في المكان اللي حددته على الشاشة، وقراءة لقطة من الشاشة عشان يتأكد إن فيديو بيشتغل فعلاً قبل ما يبدأ النقر. مفيش أي حاجة بترفع أو تتحفظ برّه جهازك.</string>
+    <string name="shortcut_start_short">تشغيل</string>
+    <string name="shortcut_start_long">تشغيل Vigil</string>
+    <string name="shortcut_stop_short">إيقاف</string>
+    <string name="shortcut_stop_long">إيقاف Vigil</string>
+    <string name="shortcut_pause_short">إيقاف مؤقت</string>
+    <string name="shortcut_pause_long">إيقاف Vigil مؤقتًا</string>
+    <string name="shortcut_resume_short">استكمال</string>
+    <string name="shortcut_resume_long">استكمال Vigil</string>
+
+    <!-- Home screen -->
+    <string name="home_tagline">بينقر بس وقت ما فيديو حقيقي يكون شغّال فعلاً.</string>
+    <string name="perm_accessibility_title">محتاج صلاحية إمكانية الوصول</string>
+    <string name="perm_accessibility_desc">مطلوبة عشان Vigil يقدر ينفّذ النقرة ويقرأ لقطة من الشاشة عشان يكتشف حركة الفيديو. مفيش حاجة بتخرج من جهازك.</string>
+    <string name="perm_overlay_title">محتاج صلاحية الظهور فوق التطبيقات</string>
+    <string name="perm_overlay_desc">مطلوبة عشان تظهر نقطة اللمس اللي ممكن تسحبها وانت بتحدد مكان النقر.</string>
+    <string name="perm_enable">تفعيل</string>
+    <string name="status_not_running">الخدمة مش شغّالة</string>
+    <string name="status_video_active">فيديو شغّال</string>
+    <string name="status_video_inactive">مفيش فيديو شغّال</string>
+    <string name="label_touch_position">مكان اللمسة</string>
+    <string name="value_not_set">مش محدد</string>
+    <string name="label_interval">الفاصل الزمني</string>
+    <string name="value_ms">%1$d مللي ثانية</string>
+    <string name="label_sensitivity">الحساسية</string>
+    <string name="label_clean_screen_mode">وضع الشاشة النظيفة</string>
+    <string name="on">شغّال</string>
+    <string name="off">متوقف</string>
+    <string name="btn_start">تشغيل</string>
+    <string name="btn_stop">إيقاف</string>
+    <string name="nav_touch_settings">إعدادات اللمس</string>
+    <string name="nav_video_detection">اكتشاف الفيديو</string>
+    <string name="nav_advanced">إعدادات متقدمة</string>
+    <string name="screen_title_debug">التصحيح</string>
+
+    <!-- Toasts / service messages -->
+    <string name="toast_service_not_connected">خدمة إمكانية الوصول مش متصلة. اقفلها وشغّلها تاني من الإعدادات &gt; إمكانية الوصول.</string>
+    <string name="toast_enable_overlay_settings_first">فعّل \"الظهور فوق التطبيقات الأخرى\" لتطبيق Vigil من الإعدادات الأول</string>
+    <string name="toast_enable_overlay_first">فعّل \"الظهور فوق التطبيقات الأخرى\" لتطبيق Vigil الأول</string>
+
+    <!-- Notification -->
+    <string name="notif_channel_name">حالة Vigil</string>
+    <string name="notif_title">Vigil - %1$s</string>
+</resources>
