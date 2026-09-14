@@ -170,8 +170,13 @@ class TouchAccessibilityService : AccessibilityService() {
         // play/pause/seek controls.
         val insets = currentSystemGestureInsets()
         val fallbackMarginPx = (24 * resources.displayMetrics.density) // ~24dp
+        val screenHeightPx = currentScreenHeightPx()
+
+        // Bottom-left corner instead of top-left: same gesture-inset-aware logic,
+        // just measured up from the bottom edge instead of down from the top.
         val safeX = (insets?.left?.toFloat() ?: fallbackMarginPx) + (4 * resources.displayMetrics.density)
-        val safeY = (insets?.top?.toFloat() ?: fallbackMarginPx) + (4 * resources.displayMetrics.density)
+        val bottomMargin = (insets?.bottom?.toFloat() ?: fallbackMarginPx) + (4 * resources.displayMetrics.density)
+        val safeY = screenHeightPx - bottomMargin
 
         landscapeOverrideX = safeX
         landscapeOverrideY = safeY
@@ -205,6 +210,21 @@ class TouchAccessibilityService : AccessibilityService() {
             Rect(gestureInsets.left, gestureInsets.top, gestureInsets.right, gestureInsets.bottom)
         } catch (e: Exception) {
             null
+        }
+    }
+
+    /** Real screen height in pixels for the current orientation, used to anchor the
+     * safe tap point to the bottom edge instead of a stale/rotated value. */
+    private fun currentScreenHeightPx(): Float {
+        return try {
+            val wm = windowManager
+            if (wm != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                wm.currentWindowMetrics.bounds.height().toFloat()
+            } else {
+                resources.displayMetrics.heightPixels.toFloat()
+            }
+        } catch (e: Exception) {
+            resources.displayMetrics.heightPixels.toFloat()
         }
     }
 
