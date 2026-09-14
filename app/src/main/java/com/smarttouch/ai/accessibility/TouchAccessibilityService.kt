@@ -215,6 +215,23 @@ class TouchAccessibilityService : AccessibilityService() {
         }
     }
 
+    /** Same as currentScreenHeightPx() but for width - see that function for why
+     * this reads from windowManager.currentWindowMetrics rather than
+     * resources.displayMetrics. */
+    private fun currentScreenWidthPx(): Float {
+        return try {
+            val wm = windowManager
+            if (wm != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                wm.currentWindowMetrics.bounds.width().toFloat()
+            } else {
+                resources.displayMetrics.widthPixels.toFloat()
+            }
+        } catch (e: Exception) {
+            resources.displayMetrics.widthPixels.toFloat()
+        }
+    }
+
+
     private fun exitLandscapeSafeMode() {
         isLandscapeSafeModeActive = false
         landscapeOverrideX = null
@@ -536,13 +553,15 @@ class TouchAccessibilityService : AccessibilityService() {
 
     private fun safeContentBounds(): Rect? {
         windowManager ?: return null
-        val metrics: DisplayMetrics = resources.displayMetrics
-        val navBarMargin = (2 * metrics.density).toInt() // essentially edge-to-edge
+        val density = resources.displayMetrics.density
+        val navBarMargin = (2 * density).toInt() // essentially edge-to-edge
+        val widthPx = currentScreenWidthPx().toInt()
+        val heightPx = currentScreenHeightPx().toInt()
         return Rect(
             navBarMargin,
             navBarMargin,
-            metrics.widthPixels - navBarMargin,
-            metrics.heightPixels - navBarMargin
+            widthPx - navBarMargin,
+            heightPx - navBarMargin
         )
     }
 
