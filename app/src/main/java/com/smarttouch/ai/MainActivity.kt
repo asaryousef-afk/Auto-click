@@ -1,5 +1,6 @@
 package com.smarttouch.ai
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -24,6 +25,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -58,6 +60,10 @@ enum class Screen { HOME, TOUCH_SETTINGS, VIDEO_DETECTION, ADVANCED, DEBUG }
 class MainActivity : ComponentActivity() {
 
     private lateinit var settingsRepository: SettingsRepository
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.wrap(newBase))
+    }
 
     private val overlayPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -511,6 +517,59 @@ private fun TouchSettingsScreen(
             color = Color.White.copy(alpha = 0.4f),
             fontSize = 11.sp
         )
+
+        SectionLabel(stringResource(R.string.saved_setups_title))
+        Text(
+            stringResource(R.string.saved_setups_desc),
+            color = Color.White.copy(alpha = 0.4f),
+            fontSize = 11.sp
+        )
+        Spacer(Modifier.height(8.dp))
+        var setupName by remember { mutableStateOf("") }
+        OutlinedTextField(
+            value = setupName,
+            onValueChange = { setupName = it },
+            placeholder = { Text(stringResource(R.string.saved_setups_name_hint)) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(8.dp))
+        SmallButton(
+            label = stringResource(R.string.saved_setups_save),
+            onClick = {
+                if (setupName.isNotBlank() && settings.hasTouchPosition) {
+                    onUpdate { it.saveSetup(setupName, settings.touchX, settings.touchY) }
+                    setupName = ""
+                }
+            }
+        )
+
+        Spacer(Modifier.height(12.dp))
+        if (settings.savedSetups.isEmpty()) {
+            Text(
+                stringResource(R.string.saved_setups_empty),
+                color = Color.White.copy(alpha = 0.4f),
+                fontSize = 12.sp
+            )
+        } else {
+            settings.savedSetups.forEach { setup ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(setup.name, color = Color.White.copy(alpha = 0.85f), fontSize = 14.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SmallButton(stringResource(R.string.saved_setups_apply), onClick = {
+                            onUpdate { it.applySetup(setup.name) }
+                        })
+                        SmallButton(stringResource(R.string.saved_setups_delete), onClick = {
+                            onUpdate { it.deleteSetup(setup.name) }
+                        }, danger = true)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -632,6 +691,32 @@ private fun AdvancedScreen(
     onHideLiveOverlay: () -> Unit
 ) {
     ScreenScaffold(title = stringResource(R.string.nav_advanced), onBack = onBack) {
+        val context = LocalContext.current
+        var currentLang by remember { mutableStateOf(LocaleHelper.getLanguage(context)) }
+        SectionLabel(stringResource(R.string.language_title))
+        Text(
+            stringResource(R.string.language_desc),
+            color = Color.White.copy(alpha = 0.5f),
+            fontSize = 12.sp
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ChoiceChip(stringResource(R.string.language_system), selected = currentLang == null, onClick = {
+                LocaleHelper.setLanguage(context, null)
+                currentLang = null
+                (context as? android.app.Activity)?.recreate()
+            })
+            ChoiceChip("العربية", selected = currentLang == "ar", onClick = {
+                LocaleHelper.setLanguage(context, "ar")
+                currentLang = "ar"
+                (context as? android.app.Activity)?.recreate()
+            })
+            ChoiceChip("English", selected = currentLang == "en", onClick = {
+                LocaleHelper.setLanguage(context, "en")
+                currentLang = "en"
+                (context as? android.app.Activity)?.recreate()
+            })
+        }
+
         ToggleRow("Start on boot", settings.startOnBoot) { v -> onUpdate { it.updateStartOnBoot(v) } }
         Text(
             "Note: this saves your preference, but Android requires accessibility services to be manually re-enabled by you after some device restarts for security reasons - this is an OS restriction, not something an app can bypass.",

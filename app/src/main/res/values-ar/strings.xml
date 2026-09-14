@@ -43,4 +43,18 @@
     <!-- Notification -->
     <string name="notif_channel_name">حالة Vigil</string>
     <string name="notif_title">Vigil - %1$s</string>
+
+    <!-- Saved setups -->
+    <string name="saved_setups_title">الأوضاع المحفوظة</string>
+    <string name="saved_setups_desc">احفظ مكان اللمسة الحالي باسم معين، عشان ترجعله بسهولة بعدين - مثلاً وضع لكل تطبيق أو نوع فيديو.</string>
+    <string name="saved_setups_name_hint">اسم الوضع</string>
+    <string name="saved_setups_save">حفظ المكان الحالي</string>
+    <string name="saved_setups_empty">مفيش أوضاع محفوظة لسه.</string>
+    <string name="saved_setups_apply">تطبيق</string>
+    <string name="saved_setups_delete">حذف</string>
+
+    <!-- App language -->
+    <string name="language_title">لغة التطبيق</string>
+    <string name="language_desc">بتغيّر لغة التطبيق ده بس، من غير ما تأثر على باقي الموبايل.</string>
+    <string name="language_system">لغة الجهاز</string>
 </resources>

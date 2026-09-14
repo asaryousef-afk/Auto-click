@@ -10,9 +10,13 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.smarttouch.ai.detection.DetectionMode
 import com.smarttouch.ai.detection.Sensitivity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 private val Context.dataStore by preferencesDataStore(name = "smart_touch_settings")
+
+/** A named, saved touch-point position the user can jump back to later. */
+data class SavedSetup(val name: String, val x: Float, val y: Float)
 
 data class TouchSettings(
     val touchX: Float = -1f,
@@ -35,7 +39,8 @@ data class TouchSettings(
     val confirmationTimeMs: Long = 800L,
     val noMotionTimeoutMs: Long = 1500L,
     val startOnBoot: Boolean = false,
-    val debugMode: Boolean = false
+    val debugMode: Boolean = false,
+    val savedSetups: List<SavedSetup> = emptyList()
 ) {
     val hasTouchPosition: Boolean get() = touchX >= 0f && touchY >= 0f
     val hasDetectionPosition: Boolean get() = detectionX >= 0f && detectionY >= 0f
@@ -65,6 +70,7 @@ class SettingsRepository(private val context: Context) {
         val NO_MOTION_TIMEOUT_MS = longPreferencesKey("no_motion_timeout_ms")
         val START_ON_BOOT = booleanPreferencesKey("start_on_boot")
         val DEBUG_MODE = booleanPreferencesKey("debug_mode")
+        val SAVED_SETUPS = stringPreferencesKey("saved_setups")
     }
 
     val settingsFlow: Flow<TouchSettings> = context.dataStore.data.map { prefs ->
@@ -93,7 +99,8 @@ class SettingsRepository(private val context: Context) {
             confirmationTimeMs = prefs[Keys.CONFIRMATION_TIME_MS] ?: 800L,
             noMotionTimeoutMs = prefs[Keys.NO_MOTION_TIMEOUT_MS] ?: 1500L,
             startOnBoot = prefs[Keys.START_ON_BOOT] ?: false,
-            debugMode = prefs[Keys.DEBUG_MODE] ?: false
+            debugMode = prefs[Keys.DEBUG_MODE] ?: false,
+            savedSetups = parseSetups(prefs[Keys.SAVED_SETUPS] ?: "")
         )
     }
 
@@ -127,6 +134,46 @@ class SettingsRepository(private val context: Context) {
     suspend fun updateNoMotionTimeout(ms: Long) = edit(Keys.NO_MOTION_TIMEOUT_MS, ms)
     suspend fun updateStartOnBoot(enabled: Boolean) = edit(Keys.START_ON_BOOT, enabled)
     suspend fun updateDebugMode(enabled: Boolean) = edit(Keys.DEBUG_MODE, enabled)
+
+    /** Saves the given position under this name, replacing any existing setup
+     * with the same name. Names can't contain '|' or newlines - those are the
+     * field/entry separators used in storage, so they're stripped. */
+    suspend fun saveSetup(name: String, x: Float, y: Float) {
+        val cleanName = name.replace("|", "").replace("\n", "").trim()
+        if (cleanName.isEmpty()) return
+        val current = parseSetups(context.dataStore.data.first()[Keys.SAVED_SETUPS] ?: "")
+        val updated = current.filterNot { it.name == cleanName } + SavedSetup(cleanName, x, y)
+        context.dataStore.edit { it[Keys.SAVED_SETUPS] = serializeSetups(updated) }
+    }
+
+    suspend fun deleteSetup(name: String) {
+        val current = parseSetups(context.dataStore.data.first()[Keys.SAVED_SETUPS] ?: "")
+        val updated = current.filterNot { it.name == name }
+        context.dataStore.edit { it[Keys.SAVED_SETUPS] = serializeSetups(updated) }
+    }
+
+    /** Applies a saved setup's position as the current touch position. Returns
+     * true if a setup with this name was found and applied. */
+    suspend fun applySetup(name: String): Boolean {
+        val setup = parseSetups(context.dataStore.data.first()[Keys.SAVED_SETUPS] ?: "")
+            .firstOrNull { it.name == name } ?: return false
+        updateTouchPosition(setup.x, setup.y)
+        return true
+    }
+
+    private fun serializeSetups(setups: List<SavedSetup>): String =
+        setups.joinToString("\n") { "${it.name}|${it.x}|${it.y}" }
+
+    private fun parseSetups(raw: String): List<SavedSetup> =
+        raw.split("\n")
+            .filter { it.isNotBlank() }
+            .mapNotNull { line ->
+                val parts = line.split("|")
+                if (parts.size != 3) return@mapNotNull null
+                val x = parts[1].toFloatOrNull() ?: return@mapNotNull null
+                val y = parts[2].toFloatOrNull() ?: return@mapNotNull null
+                SavedSetup(parts[0], x, y)
+            }
 
     suspend fun resetAll() {
         context.dataStore.edit { it.clear() }

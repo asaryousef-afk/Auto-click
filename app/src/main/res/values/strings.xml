@@ -43,4 +43,18 @@
     <!-- Notification -->
     <string name="notif_channel_name">Vigil status</string>
     <string name="notif_title">Vigil - %1$s</string>
+
+    <!-- Saved setups -->
+    <string name="saved_setups_title">Saved setups</string>
+    <string name="saved_setups_desc">Save the current touch position under a name, so you can jump straight back to it later - e.g. one setup per app or video type.</string>
+    <string name="saved_setups_name_hint">Setup name</string>
+    <string name="saved_setups_save">Save current position</string>
+    <string name="saved_setups_empty">No saved setups yet.</string>
+    <string name="saved_setups_apply">Apply</string>
+    <string name="saved_setups_delete">Delete</string>
+
+    <!-- App language -->
+    <string name="language_title">App language</string>
+    <string name="language_desc">Overrides the device language just for this app.</string>
+    <string name="language_system">System default</string>
 </resources>
