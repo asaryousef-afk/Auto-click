@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.smarttouch.ai.accessibility.DebugSnapshot
@@ -428,6 +429,33 @@ private fun TouchSettingsScreen(
             color = Color.White.copy(alpha = 0.4f),
             fontSize = 11.sp
         )
+
+        SectionLabel("Nudge position")
+        Text(
+            "Taps, not drags - use this if dragging stops at the navigation bar (that strip belongs to the system, not this app, so no drag can cross it).",
+            color = Color.White.copy(alpha = 0.4f),
+            fontSize = 11.sp
+        )
+        Spacer(Modifier.height(8.dp))
+        val nudgePx = with(LocalDensity.current) { 20.dp.toPx() }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            SmallButton("▲", onClick = {
+                onUpdate { it.updateTouchPosition(settings.touchX, settings.touchY - nudgePx) }
+            })
+            Spacer(Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(40.dp)) {
+                SmallButton("◄", onClick = {
+                    onUpdate { it.updateTouchPosition(settings.touchX - nudgePx, settings.touchY) }
+                })
+                SmallButton("►", onClick = {
+                    onUpdate { it.updateTouchPosition(settings.touchX + nudgePx, settings.touchY) }
+                })
+            }
+            Spacer(Modifier.height(6.dp))
+            SmallButton("▼", onClick = {
+                onUpdate { it.updateTouchPosition(settings.touchX, settings.touchY + nudgePx) }
+            })
+        }
 
         SectionLabel("Interval")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
