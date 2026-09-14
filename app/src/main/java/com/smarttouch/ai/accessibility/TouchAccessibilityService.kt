@@ -681,13 +681,19 @@ class TouchAccessibilityService : AccessibilityService() {
         )
         params.gravity = Gravity.TOP or Gravity.START
 
-        val existing = currentSettings
         val metrics = resources.displayMetrics
         val bounds = safeContentBounds()
         val defaultX = bounds?.right ?: (metrics.widthPixels - (30 * metrics.density).toInt())
         val defaultY = bounds?.bottom ?: (metrics.heightPixels - (100 * metrics.density).toInt())
-        params.x = if (existing.hasTouchPosition) existing.touchX.toInt() else defaultX
-        params.y = if (existing.hasTouchPosition) existing.touchY.toInt() else defaultY
+        // Use the exact same point the actual tap dispatch would use (clamped to
+        // the safe content area, landscape-aware), not the raw saved touchX/Y.
+        // Previously this read currentSettings.touchX/Y directly, which could be
+        // an unclamped value - so the dot could appear in one spot when first
+        // shown and then jump as soon as a real tap synced it to safeTouchPoint(),
+        // making it look like the point moved on its own.
+        val safePoint = safeTouchPoint()
+        params.x = safePoint?.first?.toInt() ?: defaultX
+        params.y = safePoint?.second?.toInt() ?: defaultY
 
         setupDragListener(view, params)
 
