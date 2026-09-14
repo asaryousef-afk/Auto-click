@@ -527,7 +527,7 @@ class TouchAccessibilityService : AccessibilityService() {
         val existing = currentSettings
         val metrics = resources.displayMetrics
         val bounds = safeContentBounds()
-        val defaultX = metrics.widthPixels / 2
+        val defaultX = bounds?.right ?: (metrics.widthPixels - (30 * metrics.density).toInt())
         val defaultY = bounds?.bottom ?: (metrics.heightPixels - (100 * metrics.density).toInt())
         params.x = if (existing.hasTouchPosition) existing.touchX.toInt() else defaultX
         params.y = if (existing.hasTouchPosition) existing.touchY.toInt() else defaultY
