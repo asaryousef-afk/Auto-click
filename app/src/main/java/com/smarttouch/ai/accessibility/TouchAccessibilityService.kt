@@ -994,7 +994,7 @@ class TouchAccessibilityService : AccessibilityService() {
         val builder = Notification.Builder(this, CHANNEL_ID)
             .setContentTitle("Smart Touch AI - $statusText")
             .setContentText(videoStatus)
-            .setSmallIcon(android.R.drawable.ic_menu_compass)
+            .setSmallIcon(R.drawable.ic_notification_eye_of_horus)
             .setOngoing(true)
             .setContentIntent(contentIntent)
             .addAction(0, "Start", actionIntent(ACTION_START, 1))
