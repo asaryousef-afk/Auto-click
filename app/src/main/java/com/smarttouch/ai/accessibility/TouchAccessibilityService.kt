@@ -899,6 +899,7 @@ class TouchAccessibilityService : AccessibilityService() {
         var initialY = 0
         var initialTouchX = 0f
         var initialTouchY = 0f
+        var dragInProgress = false
 
         view.setOnTouchListener { _, event ->
             if (currentSettings.overlayLocked) return@setOnTouchListener false
@@ -909,9 +910,11 @@ class TouchAccessibilityService : AccessibilityService() {
                     initialY = params.y
                     initialTouchX = event.rawX
                     initialTouchY = event.rawY
+                    dragInProgress = true
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
+                    if (!dragInProgress) return@setOnTouchListener false
                     val bounds = safeContentBounds()
                     var newX = initialX + (event.rawX - initialTouchX).toInt()
                     var newY = initialY + (event.rawY - initialTouchY).toInt()
@@ -925,7 +928,22 @@ class TouchAccessibilityService : AccessibilityService() {
                     true
                 }
                 MotionEvent.ACTION_UP -> {
-                    onDragEnd(params.x.toFloat(), params.y.toFloat())
+                    // Only a real drag that actually began with ACTION_DOWN on
+                    // this view may save a new position. A spurious ACTION_UP
+                    // with no matching DOWN (e.g. delivered by the system while
+                    // this view's window is being torn down/rebuilt mid-rotation)
+                    // must never silently overwrite the user's saved spot with
+                    // whatever position the dot happens to be showing at that
+                    // instant - such as the landscape-safe corner.
+                    val wasDragging = dragInProgress
+                    dragInProgress = false
+                    if (wasDragging) {
+                        onDragEnd(params.x.toFloat(), params.y.toFloat())
+                    }
+                    true
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    dragInProgress = false
                     true
                 }
                 else -> false
