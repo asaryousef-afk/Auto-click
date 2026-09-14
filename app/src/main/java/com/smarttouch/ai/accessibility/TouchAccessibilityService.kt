@@ -160,23 +160,7 @@ class TouchAccessibilityService : AccessibilityService() {
     private fun enterLandscapeSafeMode() {
         isLandscapeSafeModeActive = true
 
-        // The literal corner pixel (1,1) used to sit inside the system gesture inset
-        // (the edge-swipe zone for Back/notifications), so the OS swallowed the
-        // gesture before it ever reached the app - the tap landed on nothing, which
-        // is why video playback kept freezing. Instead, step in just past the real
-        // gesture-inset boundary reported by the system (or a generous fallback
-        // margin on older APIs where that inset isn't queryable), so the tap lands
-        // inside the app's actual touchable content, in the corner, away from
-        // play/pause/seek controls.
-        val insets = currentSystemGestureInsets()
-        val fallbackMarginPx = (24 * resources.displayMetrics.density) // ~24dp
-        val screenHeightPx = currentScreenHeightPx()
-
-        // Bottom-left corner instead of top-left: same gesture-inset-aware logic,
-        // just measured up from the bottom edge instead of down from the top.
-        val safeX = (insets?.left?.toFloat() ?: fallbackMarginPx) + (4 * resources.displayMetrics.density)
-        val bottomMargin = (insets?.bottom?.toFloat() ?: fallbackMarginPx) + (4 * resources.displayMetrics.density)
-        val safeY = screenHeightPx - bottomMargin
+        val (safeX, safeY) = computeLandscapeSafePoint()
 
         landscapeOverrideX = safeX
         landscapeOverrideY = safeY
@@ -480,14 +464,20 @@ class TouchAccessibilityService : AccessibilityService() {
      * Clamps the configured touch position to stay within the safe content area,
      * away from the system navigation bar / gesture strip, so Smart Touch AI never
      * accidentally triggers Back / Home / Recents.
+     *
+     * Checks the LIVE orientation on every call rather than trusting the cached
+     * isLandscapeSafeModeActive flag - onConfigurationChanged can be delayed or
+     * arrive out of order during a fast rotation (e.g. entering/exiting a YouTube
+     * fullscreen video), which previously left taps stuck on the landscape corner
+     * even after the phone was back in portrait. Computing it fresh every tap means
+     * there's no stale state to get stuck in.
      */
     private fun safeTouchPoint(): Pair<Float, Float>? {
-        // While auto-rotated into a landscape "safe" position, use that instead of
-        // the user's saved tap position - without ever overwriting the saved setting.
-        val overrideX = landscapeOverrideX
-        val overrideY = landscapeOverrideY
-        if (overrideX != null && overrideY != null) {
-            return overrideX to overrideY
+        val isLandscapeNow = resources.configuration.orientation ==
+            android.content.res.Configuration.ORIENTATION_LANDSCAPE
+
+        if (isLandscapeNow) {
+            return computeLandscapeSafePoint()
         }
 
         val settings = currentSettings
@@ -497,6 +487,23 @@ class TouchAccessibilityService : AccessibilityService() {
         val x = settings.touchX.coerceIn(bounds.left.toFloat(), bounds.right.toFloat())
         val y = settings.touchY.coerceIn(bounds.top.toFloat(), bounds.bottom.toFloat())
         return x to y
+    }
+
+    /**
+     * The bottom-left safe corner used in landscape, computed fresh from the
+     * current screen size and real system-gesture insets (not cached), so it's
+     * always correct regardless of when/whether onConfigurationChanged fired.
+     */
+    private fun computeLandscapeSafePoint(): Pair<Float, Float> {
+        val insets = currentSystemGestureInsets()
+        val fallbackMarginPx = (24 * resources.displayMetrics.density)
+        val screenHeightPx = currentScreenHeightPx()
+
+        val safeX = (insets?.left?.toFloat() ?: fallbackMarginPx) + (4 * resources.displayMetrics.density)
+        val bottomMargin = (insets?.bottom?.toFloat() ?: fallbackMarginPx) + (4 * resources.displayMetrics.density)
+        val safeY = screenHeightPx - bottomMargin
+
+        return safeX to safeY
     }
 
     private fun safeContentBounds(): Rect? {
