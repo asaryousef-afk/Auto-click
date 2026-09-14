@@ -107,6 +107,13 @@ class TouchAccessibilityService : AccessibilityService() {
     private val mainHandler = Handler(Looper.getMainLooper())
     @Volatile private var lastTapAtMs = 0L
 
+    // Landscape auto-safe-position: temporarily overrides the tap point while in
+    // landscape (e.g. fullscreen video), without ever touching the user's saved
+    // portrait position, which is restored automatically on rotating back.
+    private var isLandscapeSafeModeActive = false
+    private var landscapeOverrideX: Float? = null
+    private var landscapeOverrideY: Float? = null
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
@@ -131,6 +138,70 @@ class TouchAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) { /* not used - detection relies on periodic screenshots */ }
 
     override fun onInterrupt() { /* no-op */ }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val isLandscapeNow = newConfig.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+        if (isLandscapeNow && !isLandscapeSafeModeActive) {
+            enterLandscapeSafeMode()
+        } else if (!isLandscapeNow && isLandscapeSafeModeActive) {
+            exitLandscapeSafeMode()
+        }
+    }
+
+    /**
+     * Moves the effective tap point to a safe corner (calculated from the current
+     * screen size, not a hardcoded coordinate) whenever the device rotates to
+     * landscape - e.g. fullscreen video - so it never lands on the video's
+     * play/pause, seek bar, or other on-screen controls. The user's saved portrait
+     * tap position is never overwritten; it's restored automatically on rotating
+     * back to portrait.
+     */
+    private fun enterLandscapeSafeMode() {
+        isLandscapeSafeModeActive = true
+
+        val metrics = resources.displayMetrics
+        val bounds = safeContentBounds()
+
+        // Small edge region near the top-left corner - well away from center
+        // controls, the seek bar (bottom), and the top action bar.
+        var safeX = metrics.widthPixels * 0.03f
+        var safeY = metrics.heightPixels * 0.06f
+        if (bounds != null) {
+            safeX = safeX.coerceIn(bounds.left.toFloat(), bounds.right.toFloat())
+            safeY = safeY.coerceIn(bounds.top.toFloat(), bounds.bottom.toFloat())
+        }
+
+        landscapeOverrideX = safeX
+        landscapeOverrideY = safeY
+
+        mainHandler.post {
+            val view = floatingView
+            val params = floatingParams
+            if (view != null && params != null) {
+                params.x = safeX.toInt()
+                params.y = safeY.toInt()
+                runCatching { windowManager?.updateViewLayout(view, params) }
+            }
+        }
+    }
+
+    private fun exitLandscapeSafeMode() {
+        isLandscapeSafeModeActive = false
+        landscapeOverrideX = null
+        landscapeOverrideY = null
+
+        mainHandler.post {
+            val view = floatingView
+            val params = floatingParams
+            val settings = currentSettings
+            if (view != null && params != null && settings.hasTouchPosition) {
+                params.x = settings.touchX.toInt()
+                params.y = settings.touchY.toInt()
+                runCatching { windowManager?.updateViewLayout(view, params) }
+            }
+        }
+    }
 
     override fun onDestroy() {
         instance = null
@@ -369,6 +440,14 @@ class TouchAccessibilityService : AccessibilityService() {
      * accidentally triggers Back / Home / Recents.
      */
     private fun safeTouchPoint(): Pair<Float, Float>? {
+        // While auto-rotated into a landscape "safe" position, use that instead of
+        // the user's saved tap position - without ever overwriting the saved setting.
+        val overrideX = landscapeOverrideX
+        val overrideY = landscapeOverrideY
+        if (overrideX != null && overrideY != null) {
+            return overrideX to overrideY
+        }
+
         val settings = currentSettings
         if (!settings.hasTouchPosition) return null
 
