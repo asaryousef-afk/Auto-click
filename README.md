@@ -1,4 +1,4 @@
-# Smart Touch AI
+# Vigil
 
 A real, installable native Android app (Kotlin, Jetpack Compose, MVVM-ish structure,
 Coroutines, DataStore). Package: `com.smarttouch.ai`. Min SDK 26, target/compile SDK 34.
@@ -70,13 +70,13 @@ this is a real Android platform limitation, not something this app can work arou
 ## Bixby / Samsung integration - what's real here
 
 Samsung does not expose a public API that lets third-party apps register arbitrary
-Bixby *voice* phrases directly. What Smart Touch AI actually implements is the
+Bixby *voice* phrases directly. What Vigil actually implements is the
 supported Android mechanism: **static App Shortcuts** (`res/xml/shortcuts.xml`) for
 Start / Stop / Pause / Resume. On a Samsung device you can:
 
 1. Long-press the app icon to trigger a shortcut directly, or
 2. Open **Settings → Modes and Routines**, create/edit a Routine, add the action
-   **"Open app"**, choose Smart Touch AI, and pick one of these shortcuts.
+   **"Open app"**, choose Vigil, and pick one of these shortcuts.
 
 That's the real, documented way third-party apps hook into Routines/Bixby today -
 this app doesn't pretend to do more than that.

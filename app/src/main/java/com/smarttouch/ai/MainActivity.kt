@@ -233,7 +233,7 @@ private fun HomeScreen(
             .verticalScroll(rememberScrollState())
             .padding(20.dp)
     ) {
-        Text("Smart Touch AI", color = Color.White, fontSize = 24.sp)
+        Text("Vigil", color = Color.White, fontSize = 24.sp)
         Spacer(Modifier.height(4.dp))
         Text(
             "Taps only while a real video is actually playing.",
@@ -246,7 +246,7 @@ private fun HomeScreen(
         if (!isAccessibilityEnabled) {
             PermissionCard(
                 title = "Accessibility permission needed",
-                description = "Required so Smart Touch AI can perform the configured tap and read a screenshot to detect video motion. Nothing leaves your device.",
+                description = "Required so Vigil can perform the configured tap and read a screenshot to detect video motion. Nothing leaves your device.",
                 actionLabel = "Enable",
                 onClick = onEnableAccessibility
             )
@@ -528,7 +528,7 @@ private fun VideoDetectionScreen(
             onUpdate { it.updateVideoDetectionEnabled(v) }
         }
         Text(
-            "When off, Smart Touch AI taps on a fixed interval the whole time the engine is running - it will not check whether a video is playing.",
+            "When off, Vigil taps on a fixed interval the whole time the engine is running - it will not check whether a video is playing.",
             color = Color.White.copy(alpha = 0.5f),
             fontSize = 12.sp
         )

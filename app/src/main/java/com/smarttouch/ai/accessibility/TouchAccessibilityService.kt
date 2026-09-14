@@ -520,7 +520,7 @@ class TouchAccessibilityService : AccessibilityService() {
 
     /**
      * Clamps the configured touch position to stay within the safe content area,
-     * away from the system navigation bar / gesture strip, so Smart Touch AI never
+     * away from the system navigation bar / gesture strip, so Vigil never
      * accidentally triggers Back / Home / Recents.
      *
      * Checks the LIVE orientation on every call rather than trusting the cached
@@ -701,7 +701,7 @@ class TouchAccessibilityService : AccessibilityService() {
             return
         }
         if (!android.provider.Settings.canDrawOverlays(this)) {
-            Toast.makeText(this, "Enable \"Display over other apps\" for Smart Touch AI in Settings first", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Enable \"Display over other apps\" for Vigil in Settings first", Toast.LENGTH_LONG).show()
             return
         }
         val wm = windowManager ?: return
@@ -779,7 +779,7 @@ class TouchAccessibilityService : AccessibilityService() {
             return
         }
         if (!android.provider.Settings.canDrawOverlays(this)) {
-            Toast.makeText(this, "Enable \"Display over other apps\" for Smart Touch AI first", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Enable \"Display over other apps\" for Vigil first", Toast.LENGTH_LONG).show()
             return
         }
         val wm = windowManager ?: return
@@ -970,7 +970,7 @@ class TouchAccessibilityService : AccessibilityService() {
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Smart Touch AI status",
+            "Vigil status",
             NotificationManager.IMPORTANCE_LOW
         )
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
@@ -992,7 +992,7 @@ class TouchAccessibilityService : AccessibilityService() {
         val videoStatus = if (videoActive) "VIDEO ACTIVE" else "VIDEO INACTIVE"
 
         val builder = Notification.Builder(this, CHANNEL_ID)
-            .setContentTitle("Smart Touch AI - $statusText")
+            .setContentTitle("Vigil - $statusText")
             .setContentText(videoStatus)
             .setSmallIcon(R.drawable.ic_notification_eye_of_horus)
             .setOngoing(true)
