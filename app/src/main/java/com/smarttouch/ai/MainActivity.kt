@@ -505,6 +505,11 @@ private fun TouchSettingsScreen(
             onChange = { v -> onUpdate { it.updateOverlayOpacity(v) } }
         )
         ToggleRow("Lock position", settings.overlayLocked) { v -> onUpdate { it.updateOverlayLocked(v) } }
+        Text(
+            "When on, the point never moves on its own for any reason - not dragging, not rotating to landscape and back, not hiding it. It always taps exactly where you left it.",
+            color = Color.White.copy(alpha = 0.4f),
+            fontSize = 11.sp
+        )
     }
 }
 

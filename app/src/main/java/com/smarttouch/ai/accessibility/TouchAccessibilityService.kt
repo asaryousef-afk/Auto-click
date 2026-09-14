@@ -144,6 +144,10 @@ class TouchAccessibilityService : AccessibilityService() {
 
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
+        // When locked, the point must never move for any automatic reason -
+        // not just manual drag. Skip the landscape-safe-corner logic entirely
+        // so there's nothing left that can reposition it behind the user's back.
+        if (currentSettings.overlayLocked) return
         val isLandscapeNow = newConfig.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
         if (isLandscapeNow && !isLandscapeSafeModeActive) {
             enterLandscapeSafeMode()
@@ -527,6 +531,17 @@ class TouchAccessibilityService : AccessibilityService() {
      * there's no stale state to get stuck in.
      */
     private fun safeTouchPoint(): Pair<Float, Float>? {
+        val settings = currentSettings
+
+        // Locked means locked: tap exactly where it's saved, every time, in any
+        // orientation - no landscape-safe-corner override, no edge clamping. This
+        // is what "Lock position" now guarantees end to end, since the automatic
+        // repositioning below has repeatedly been a source of the point silently
+        // moving even when the user deliberately placed it somewhere specific.
+        if (settings.overlayLocked) {
+            return if (settings.hasTouchPosition) settings.touchX to settings.touchY else null
+        }
+
         // resources.configuration.orientation is read from this Service's own
         // Resources object, which - like resources.displayMetrics earlier today -
         // isn't reliably live: it can report a stale orientation for a bit after
@@ -540,7 +555,6 @@ class TouchAccessibilityService : AccessibilityService() {
             return computeLandscapeSafePoint()
         }
 
-        val settings = currentSettings
         if (!settings.hasTouchPosition) return null
 
         val bounds = safeContentBounds() ?: return settings.touchX to settings.touchY
