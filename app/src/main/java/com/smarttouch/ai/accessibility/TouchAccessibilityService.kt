@@ -455,12 +455,37 @@ class TouchAccessibilityService : AccessibilityService() {
 
     private fun dispatchConfiguredTap() {
         val point = safeTouchPoint() ?: return
+        syncDotToPoint(point)
         val path = Path().apply { moveTo(point.first, point.second) }
         val duration = currentSettings.touchDurationMs.coerceIn(1L, 2000L)
         val stroke = GestureDescription.StrokeDescription(path, 0L, duration)
         val gesture = GestureDescription.Builder().addStroke(stroke).build()
         dispatchGesture(gesture, null, null)
         lastTapAtMs = System.currentTimeMillis()
+    }
+
+    /**
+     * Keeps the visible dot exactly in sync with the point each tap actually
+     * lands on. safeTouchPoint() recomputes live on every tap (so it stays
+     * correct if system-gesture insets change after rotation, e.g. YouTube
+     * settling into immersive mode a moment after the phone rotates), but
+     * enterLandscapeSafeMode() only placed the dot once at rotation time. That
+     * gap let the dot visually freeze at a stale spot while real taps moved on
+     * to a different, live-computed point. Using the same point for both here
+     * makes that drift impossible - the dot always shows exactly where the
+     * next tap will land.
+     */
+    private fun syncDotToPoint(point: Pair<Float, Float>) {
+        val view = floatingView ?: return
+        val params = floatingParams ?: return
+        val x = point.first.toInt()
+        val y = point.second.toInt()
+        if (params.x == x && params.y == y) return
+        mainHandler.post {
+            params.x = x
+            params.y = y
+            runCatching { windowManager?.updateViewLayout(view, params) }
+        }
     }
 
     /**
