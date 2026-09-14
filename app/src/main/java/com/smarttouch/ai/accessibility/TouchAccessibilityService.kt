@@ -160,17 +160,13 @@ class TouchAccessibilityService : AccessibilityService() {
     private fun enterLandscapeSafeMode() {
         isLandscapeSafeModeActive = true
 
-        val metrics = resources.displayMetrics
-        val bounds = safeContentBounds()
-
-        // Small edge region near the top-left corner - well away from center
-        // controls, the seek bar (bottom), and the top action bar.
-        var safeX = metrics.widthPixels * 0.03f
-        var safeY = metrics.heightPixels * 0.06f
-        if (bounds != null) {
-            safeX = safeX.coerceIn(bounds.left.toFloat(), bounds.right.toFloat())
-            safeY = safeY.coerceIn(bounds.top.toFloat(), bounds.bottom.toFloat())
-        }
+        // The literal corner pixel - as close to (0,0) as the system will dispatch a
+        // gesture to. Virtually no app places an interactive control exactly on the
+        // extreme edge pixel, so this is the lowest-risk coordinate available. (No
+        // on-screen coordinate can be mathematically guaranteed risk-free for every
+        // possible app layout, but this is as close as it gets.)
+        val safeX = 1f
+        val safeY = 1f
 
         landscapeOverrideX = safeX
         landscapeOverrideY = safeY
