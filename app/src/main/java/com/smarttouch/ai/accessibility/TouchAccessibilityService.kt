@@ -24,6 +24,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
+import android.widget.FrameLayout
 import android.widget.Toast
 import com.smarttouch.ai.MainActivity
 import com.smarttouch.ai.R
@@ -94,8 +95,21 @@ class TouchAccessibilityService : AccessibilityService() {
     private val audioManager: android.media.AudioManager by lazy {
         getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
     }
+    // The touch-point dot lives inside a full-screen, otherwise-transparent
+    // container window (floatingContainer) instead of being its own tiny
+    // WindowManager window. A window sized to just the dot could lose an active
+    // drag mid-gesture on some OEM skins (Samsung One UI observed) once the
+    // finger's raw position crossed into another app/activity's own touchable
+    // view (e.g. this app's own "Start" button) - the WindowManager-level touch
+    // stream isn't guaranteed to stay locked to a tiny overlay window the way an
+    // in-window View touch target is. Making the container span the whole screen
+    // means the drag is resolved by normal View dispatch inside ONE window, which
+    // never loses the gesture, while areas outside the dot still pass through to
+    // whatever's underneath since nothing there consumes the touch.
+    private var floatingContainer: FrameLayout? = null
+    private var floatingContainerParams: WindowManager.LayoutParams? = null
     private var floatingView: View? = null
-    private var floatingParams: WindowManager.LayoutParams? = null
+    private var floatingParams: FrameLayout.LayoutParams? = null
 
     private var detectionPointView: View? = null
     private var detectionPointParams: WindowManager.LayoutParams? = null
@@ -169,9 +183,9 @@ class TouchAccessibilityService : AccessibilityService() {
             val view = floatingView
             val params = floatingParams
             if (view != null && params != null) {
-                params.x = safeX.toInt()
-                params.y = safeY.toInt()
-                runCatching { windowManager?.updateViewLayout(view, params) }
+                params.leftMargin = safeX.toInt()
+                params.topMargin = safeY.toInt()
+                view.layoutParams = params
             }
         }
     }
@@ -222,9 +236,9 @@ class TouchAccessibilityService : AccessibilityService() {
             val params = floatingParams
             val settings = currentSettings
             if (view != null && params != null && settings.hasTouchPosition) {
-                params.x = settings.touchX.toInt()
-                params.y = settings.touchY.toInt()
-                runCatching { windowManager?.updateViewLayout(view, params) }
+                params.leftMargin = settings.touchX.toInt()
+                params.topMargin = settings.touchY.toInt()
+                view.layoutParams = params
             }
         }
     }
@@ -296,7 +310,7 @@ class TouchAccessibilityService : AccessibilityService() {
      * regardless of engine/video state - used by the "Test tap" button so the user
      * gets immediate feedback while positioning the dot. */
     fun testSingleTap() {
-        val point = floatingParams?.let { it.x.toFloat() to it.y.toFloat() } ?: safeTouchPoint()
+        val point = floatingParams?.let { it.leftMargin.toFloat() to it.topMargin.toFloat() } ?: safeTouchPoint()
         if (point == null) {
             updateNotification("Set a touch position first", videoActive = false)
             return
@@ -338,7 +352,7 @@ class TouchAccessibilityService : AccessibilityService() {
         val sizePx = (sizeDp * resources.displayMetrics.density).toInt().coerceAtLeast(2)
         params.width = sizePx
         params.height = sizePx
-        runCatching { windowManager?.updateViewLayout(view, params) }
+        view.layoutParams = params
     }
 
     /** A second, independently-draggable point marking the CENTER of the region to
@@ -621,7 +635,7 @@ class TouchAccessibilityService : AccessibilityService() {
 
     private fun addFloatingViewIfNeeded() {
         if (floatingView != null) {
-            Toast.makeText(this, "Point already showing at ${floatingParams?.x}, ${floatingParams?.y}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Point already showing at ${floatingParams?.leftMargin}, ${floatingParams?.topMargin}", Toast.LENGTH_SHORT).show()
             return
         }
         if (!android.provider.Settings.canDrawOverlays(this)) {
@@ -629,6 +643,32 @@ class TouchAccessibilityService : AccessibilityService() {
             return
         }
         val wm = windowManager ?: return
+
+        // Full-screen, transparent container window. It only visually shows the
+        // small dot child; everywhere else, touches fall through to whatever's
+        // underneath (FLAG_NOT_TOUCH_MODAL + nothing else in the container
+        // consumes them there).
+        val container = FrameLayout(this)
+
+        val containerParams = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            PixelFormat.TRANSLUCENT
+        )
+        containerParams.gravity = Gravity.TOP or Gravity.START
+        containerParams.x = 0
+        containerParams.y = 0
+
+        val added = runCatching { wm.addView(container, containerParams) }
+        if (added.isFailure) {
+            val reason = added.exceptionOrNull()?.javaClass?.simpleName ?: "unknown"
+            Toast.makeText(this, "Couldn't show the point: $reason", Toast.LENGTH_LONG).show()
+            updateNotification("Overlay permission missing - enable it in app settings", videoActive = false)
+            return
+        }
 
         // Build the dot as a plain View with a directly-set background color, sized in
         // raw pixels - this avoids any XML-inflation / shape-drawable rendering edge
@@ -643,48 +683,93 @@ class TouchAccessibilityService : AccessibilityService() {
             elevation = 999f
         }
 
-        val params = WindowManager.LayoutParams(
-            sizePx,
-            sizePx,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-            PixelFormat.OPAQUE
-        )
-        params.gravity = Gravity.TOP or Gravity.START
-
         val existing = currentSettings
         val metrics = resources.displayMetrics
         val bounds = safeContentBounds()
         val defaultX = bounds?.right ?: (metrics.widthPixels - (30 * metrics.density).toInt())
         val defaultY = bounds?.bottom ?: (metrics.heightPixels - (100 * metrics.density).toInt())
-        params.x = if (existing.hasTouchPosition) existing.touchX.toInt() else defaultX
-        params.y = if (existing.hasTouchPosition) existing.touchY.toInt() else defaultY
 
-        setupDragListener(view, params)
+        val dotParams = FrameLayout.LayoutParams(sizePx, sizePx)
+        dotParams.leftMargin = if (existing.hasTouchPosition) existing.touchX.toInt() else defaultX
+        dotParams.topMargin = if (existing.hasTouchPosition) existing.touchY.toInt() else defaultY
 
-        val added = runCatching { wm.addView(view, params) }
-        if (added.isFailure) {
-            val reason = added.exceptionOrNull()?.javaClass?.simpleName ?: "unknown"
-            Toast.makeText(this, "Couldn't show the point: $reason", Toast.LENGTH_LONG).show()
-            updateNotification("Overlay permission missing - enable it in app settings", videoActive = false)
-            return
-        }
-        Toast.makeText(this, "Point shown at ${params.x}, ${params.y}", Toast.LENGTH_SHORT).show()
+        setupDotDragListener(view, dotParams)
+
+        container.addView(view, dotParams)
+
+        Toast.makeText(this, "Point shown at ${dotParams.leftMargin}, ${dotParams.topMargin}", Toast.LENGTH_SHORT).show()
+        floatingContainer = container
+        floatingContainerParams = containerParams
         floatingView = view
-        floatingParams = params
+        floatingParams = dotParams
         overlayVisible = true
 
         applyOverlayVisuals(currentSettings)
     }
 
+    /**
+     * Drag handling for the dot INSIDE the full-screen container: everything
+     * happens as normal View touch dispatch within one window (updating the
+     * dot's margins + requestLayout, no WindowManager IPC per move), so once the
+     * dot's own ACTION_DOWN is captured, Android guarantees this view keeps
+     * receiving the rest of the gesture no matter where on screen the finger
+     * ends up - including areas that visually show this app's own "Start"
+     * button, another app's controls, or anything else underneath.
+     */
+    private fun setupDotDragListener(
+        view: View,
+        params: FrameLayout.LayoutParams,
+        onDragEnd: (x: Float, y: Float) -> Unit = { x, y ->
+            serviceScope.launch { settingsRepository.updateTouchPosition(x, y) }
+        }
+    ) {
+        var initialLeft = 0
+        var initialTop = 0
+        var initialTouchX = 0f
+        var initialTouchY = 0f
+
+        view.setOnTouchListener { _, event ->
+            if (currentSettings.overlayLocked) return@setOnTouchListener false
+
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    initialLeft = params.leftMargin
+                    initialTop = params.topMargin
+                    initialTouchX = event.rawX
+                    initialTouchY = event.rawY
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val bounds = safeContentBounds()
+                    var newLeft = initialLeft + (event.rawX - initialTouchX).toInt()
+                    var newTop = initialTop + (event.rawY - initialTouchY).toInt()
+                    if (bounds != null) {
+                        newLeft = newLeft.coerceIn(bounds.left, bounds.right)
+                        newTop = newTop.coerceIn(bounds.top, bounds.bottom)
+                    }
+                    params.leftMargin = newLeft
+                    params.topMargin = newTop
+                    view.layoutParams = params
+                    true
+                }
+                MotionEvent.ACTION_UP -> {
+                    onDragEnd(params.leftMargin.toFloat(), params.topMargin.toFloat())
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
     private fun removeFloatingView() {
         val wm = windowManager ?: return
-        if (floatingView == null) {
+        if (floatingContainer == null) {
             Toast.makeText(this, "No point currently showing", Toast.LENGTH_SHORT).show()
             return
         }
-        floatingView?.let { runCatching { wm.removeView(it) } }
+        floatingContainer?.let { runCatching { wm.removeView(it) } }
+        floatingContainer = null
+        floatingContainerParams = null
         floatingView = null
         floatingParams = null
         overlayVisible = false
