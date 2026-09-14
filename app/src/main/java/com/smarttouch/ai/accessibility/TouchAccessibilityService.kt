@@ -240,10 +240,19 @@ class TouchAccessibilityService : AccessibilityService() {
         mainHandler.post {
             val view = floatingView
             val params = floatingParams
-            val point = safeTouchPoint()
-            if (view != null && params != null && point != null) {
-                params.x = point.first.toInt()
-                params.y = point.second.toInt()
+            val settings = currentSettings
+            // Restore directly from the saved position rather than calling
+            // safeTouchPoint(), which re-checks live orientation on its own - a
+            // check that can still disagree with what we already know for a
+            // moment right after rotating (the same kind of staleness fixed for
+            // taps earlier), which was sending this restore back to the
+            // landscape corner instead of the user's actual saved spot.
+            if (view != null && params != null && settings.hasTouchPosition) {
+                val bounds = safeContentBounds()
+                val x = if (bounds != null) settings.touchX.coerceIn(bounds.left.toFloat(), bounds.right.toFloat()) else settings.touchX
+                val y = if (bounds != null) settings.touchY.coerceIn(bounds.top.toFloat(), bounds.bottom.toFloat()) else settings.touchY
+                params.x = x.toInt()
+                params.y = y.toInt()
                 runCatching { windowManager?.updateViewLayout(view, params) }
             }
         }
