@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -438,22 +439,29 @@ private fun TouchSettingsScreen(
         )
         Spacer(Modifier.height(8.dp))
         val nudgePx = with(LocalDensity.current) { 20.dp.toPx() }
+        val metrics = LocalContext.current.resources.displayMetrics
+        // touchX/touchY use -1f as a "not set yet" sentinel. Nudging a single
+        // axis off -1 (e.g. only Y for ▲/▼) left the other axis stuck at -1
+        // forever, so hasTouchPosition never became true and Start refused to
+        // run. Start from the screen center instead whenever it's not set yet.
+        fun baseX() = if (settings.hasTouchPosition) settings.touchX else metrics.widthPixels / 2f
+        fun baseY() = if (settings.hasTouchPosition) settings.touchY else metrics.heightPixels / 2f
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             SmallButton("▲", onClick = {
-                onUpdate { it.updateTouchPosition(settings.touchX, settings.touchY - nudgePx) }
+                onUpdate { it.updateTouchPosition(baseX(), baseY() - nudgePx) }
             })
             Spacer(Modifier.height(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(40.dp)) {
                 SmallButton("◄", onClick = {
-                    onUpdate { it.updateTouchPosition(settings.touchX - nudgePx, settings.touchY) }
+                    onUpdate { it.updateTouchPosition(baseX() - nudgePx, baseY()) }
                 })
                 SmallButton("►", onClick = {
-                    onUpdate { it.updateTouchPosition(settings.touchX + nudgePx, settings.touchY) }
+                    onUpdate { it.updateTouchPosition(baseX() + nudgePx, baseY()) }
                 })
             }
             Spacer(Modifier.height(6.dp))
             SmallButton("▼", onClick = {
-                onUpdate { it.updateTouchPosition(settings.touchX, settings.touchY + nudgePx) }
+                onUpdate { it.updateTouchPosition(baseX(), baseY() + nudgePx) }
             })
         }
 
