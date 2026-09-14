@@ -59,6 +59,11 @@ enum class Screen { HOME, TOUCH_SETTINGS, VIDEO_DETECTION, ADVANCED, DEBUG }
 
 class MainActivity : ComponentActivity() {
 
+    companion object {
+        const val ACTION_APPLY_SETUP = "com.smarttouch.ai.action.APPLY_SETUP"
+        const val EXTRA_SETUP_NAME = "setup_name"
+    }
+
     private lateinit var settingsRepository: SettingsRepository
 
     override fun attachBaseContext(newBase: Context) {
@@ -90,6 +95,10 @@ class MainActivity : ComponentActivity() {
                 var screen by remember { mutableStateOf(Screen.HOME) }
                 val settings by settingsRepository.settingsFlow.collectAsState(initial = TouchSettings())
                 var refreshTick by remember { mutableStateOf(0) }
+
+                LaunchedEffect(settings.savedSetups) {
+                    SetupShortcuts.sync(applicationContext, settings.savedSetups)
+                }
 
                 LaunchedEffect(Unit) {
                     while (true) {
@@ -161,6 +170,15 @@ class MainActivity : ComponentActivity() {
 
     private fun handleShortcutIntent(intent: Intent?) {
         val action = intent?.action ?: return
+        if (action == ACTION_APPLY_SETUP) {
+            val name = intent.getStringExtra(EXTRA_SETUP_NAME) ?: return
+            lifecycleScope.launch {
+                if (settingsRepository.applySetup(name)) {
+                    TouchAccessibilityService.instance?.startEngine()
+                }
+            }
+            return
+        }
         val mapped = when (action) {
             "com.smarttouch.ai.action.START" -> TouchAccessibilityService.ACTION_START
             "com.smarttouch.ai.action.STOP" -> TouchAccessibilityService.ACTION_STOP

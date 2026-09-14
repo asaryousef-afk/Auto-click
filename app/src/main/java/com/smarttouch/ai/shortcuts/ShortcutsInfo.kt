@@ -12,6 +12,9 @@ package com.smarttouch.ai.shortcuts
  * arbitrary Bixby *voice* phrases directly - App Shortcuts + Routines is the
  * supported mechanism, so that's what this app uses rather than pretending a raw
  * voice command can call into the app directly.
+ *
+ * Each saved setup (Touch Settings -> Saved setups) also gets its own dynamic
+ * shortcut this same way - see SetupShortcuts.kt.
  */
 object ShortcutsInfo {
     const val DOCUMENTATION = "See res/xml/shortcuts.xml for the 4 declared shortcuts."
