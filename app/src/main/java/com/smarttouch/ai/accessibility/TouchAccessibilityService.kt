@@ -107,6 +107,17 @@ class TouchAccessibilityService : AccessibilityService() {
     private val mainHandler = Handler(Looper.getMainLooper())
     @Volatile private var lastTapAtMs = 0L
 
+    // Event-driven audio detection: instead of polling audioManager.isMusicActive
+    // every detection cycle, this stays cached and is only updated when Android
+    // itself tells us playback actually changed (registerAudioPlaybackCallback
+    // below) - so the audio check costs nothing until something really changes.
+    @Volatile private var cachedAudioActive = false
+    private val audioPlaybackCallback = object : android.media.AudioManager.AudioPlaybackCallback() {
+        override fun onPlaybackConfigChanged(configs: MutableList<android.media.AudioPlaybackConfiguration>?) {
+            cachedAudioActive = !configs.isNullOrEmpty()
+        }
+    }
+
     // Landscape auto-safe-position: temporarily overrides the tap point while in
     // landscape (e.g. fullscreen video), without ever touching the user's saved
     // portrait position, which is restored automatically on rotating back.
@@ -136,6 +147,9 @@ class TouchAccessibilityService : AccessibilityService() {
         }
 
         updateNotification("Ready", videoActive = false)
+
+        cachedAudioActive = runCatching { audioManager.isMusicActive }.getOrDefault(false)
+        runCatching { audioManager.registerAudioPlaybackCallback(audioPlaybackCallback, mainHandler) }
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) { /* not used - detection relies on periodic screenshots */ }
@@ -264,6 +278,7 @@ class TouchAccessibilityService : AccessibilityService() {
 
     override fun onDestroy() {
         instance = null
+        runCatching { audioManager.unregisterAudioPlaybackCallback(audioPlaybackCallback) }
         stopEngine()
         removeFloatingView()
         removeDebugBadge()
@@ -414,7 +429,7 @@ class TouchAccessibilityService : AccessibilityService() {
                 }
 
                 val mode = currentSettings.detectionMode
-                val audioActive = runCatching { audioManager.isMusicActive }.getOrDefault(false)
+                val audioActive = cachedAudioActive
 
                 var motionDetected = false
                 var score = 0f
