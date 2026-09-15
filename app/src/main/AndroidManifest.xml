@@ -46,6 +46,19 @@
             android:name=".ServiceActionReceiver"
             android:exported="false" />
 
+        <!-- Only used to obtain MediaSessionManager access for the optional
+             "precise YouTube/Netflix detection" feature (Video Detection screen).
+             Does not read notification content - see MediaSessionListenerService.kt. -->
+        <service
+            android:name=".MediaSessionListenerService"
+            android:label="@string/media_session_listener_label"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
     </application>
 
 </manifest>
