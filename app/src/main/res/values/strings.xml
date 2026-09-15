@@ -1,5 +1,4 @@
 <resources>
-    <string name="media_session_listener_label">Vigil playback check</string>
     <string name="app_name">Vigil</string>
     <string name="accessibility_service_description">Lets Vigil perform the configured tap at your chosen screen position, and read a screenshot of the screen to detect whether a video is actually playing before it starts tapping. Nothing is ever uploaded or saved outside your device.</string>
     <string name="shortcut_start_short">Start</string>
@@ -97,10 +96,6 @@
     <string name="vd_detection_method">Detection method</string>
     <string name="vd_detection_method_desc">Audio is usually far more reliable than watching the screen - most videos play sound. Visual can still help for muted videos.</string>
     <string name="vd_detection_point">Detection point</string>
-    <string name="vd_precise_yt_netflix">Precise YouTube/Netflix detection</string>
-    <string name="vd_precise_yt_netflix_desc">Optional add-on to the audio check above: asks Android directly whether YouTube or Netflix has an active, playing media session - fully event-driven, no extra battery use. Other apps (TikTok, Instagram, etc.) generally don\'t publish a session Android can check this way, so they keep using the general audio detection.</string>
-    <string name="vd_precise_yt_netflix_toggle">Enable precise detection</string>
-    <string name="vd_precise_yt_netflix_permission_needed">Needs Notification access (used only to check playback state - never reads notification content)</string>
     <string name="vd_detection_point_desc">A separate cyan point marking where to watch for video motion - place it over the actual video (e.g. screen center), independent of where the tap point is.</string>
     <string name="vd_show_detection_point">Show detection point</string>
     <string name="vd_hide">Hide</string>

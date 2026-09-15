@@ -118,92 +118,6 @@ class TouchAccessibilityService : AccessibilityService() {
         }
     }
 
-    // Precise YouTube/Netflix detection (opt-in, additive to the audio check
-    // above - see Video Detection screen). Uses MediaSessionManager, which is
-    // fully event-driven the same way: no polling, Android calls back only when
-    // a session appears/disappears or its play/pause state actually changes.
-    // Only YouTube and Netflix are included - they're the apps that reliably
-    // publish a real media session; short-form feeds like Reels/TikTok
-    // generally don't (per Android's own MediaSession guidance: it's meant for
-    // a single active long-form video, not a scrolling feed), so there's
-    // nothing reliable to hook into for those - they stay on the general audio
-    // check above.
-    private val trustedMediaPackages = setOf(
-        "com.google.android.youtube",
-        "com.netflix.mediaclient"
-    )
-    @Volatile private var trustedMediaSessionActive = false
-    private var mediaSessionManager: android.media.session.MediaSessionManager? = null
-    private val trackedMediaControllers = mutableListOf<android.media.session.MediaController>()
-
-    private val mediaControllerCallback = object : android.media.session.MediaController.Callback() {
-        override fun onPlaybackStateChanged(state: android.media.session.PlaybackState?) {
-            recomputeTrustedMediaSessionActive()
-        }
-    }
-
-    private val activeSessionsListener =
-        object : android.media.session.MediaSessionManager.OnActiveSessionsChangedListener {
-            override fun onActiveSessionsChanged(controllers: MutableList<android.media.session.MediaController>?) {
-                trackedMediaControllers.forEach { runCatching { it.unregisterCallback(mediaControllerCallback) } }
-                trackedMediaControllers.clear()
-                controllers?.filter { it.packageName in trustedMediaPackages }?.forEach { c ->
-                    runCatching { c.registerCallback(mediaControllerCallback, mainHandler) }
-                    trackedMediaControllers.add(c)
-                }
-                recomputeTrustedMediaSessionActive()
-            }
-        }
-
-    private fun recomputeTrustedMediaSessionActive() {
-        var anyPlaying = false
-        for (c in trackedMediaControllers) {
-            val playing = runCatching { c.playbackState?.state == android.media.session.PlaybackState.STATE_PLAYING }
-                .getOrDefault(false)
-            if (playing) {
-                anyPlaying = true
-                break
-            }
-        }
-        trustedMediaSessionActive = anyPlaying
-    }
-
-    /** Whether the user has granted Notification access to MediaSessionListenerService -
-     * required by the OS for any app to call MediaSessionManager.getActiveSessions(). */
-    fun isMediaSessionAccessGranted(): Boolean {
-        val enabled = android.provider.Settings.Secure.getString(
-            contentResolver, "enabled_notification_listeners"
-        ) ?: ""
-        return enabled.contains(packageName)
-    }
-
-    private fun setupMediaSessionMonitoringIfPermitted() {
-        if (mediaSessionManager != null || !isMediaSessionAccessGranted()) return
-        try {
-            val manager = getSystemService(Context.MEDIA_SESSION_SERVICE) as android.media.session.MediaSessionManager
-            val component = android.content.ComponentName(this, MediaSessionListenerService::class.java)
-            manager.addOnActiveSessionsChangedListener(activeSessionsListener, component)
-            mediaSessionManager = manager
-            activeSessionsListener.onActiveSessionsChanged(manager.getActiveSessions(component))
-        } catch (e: Exception) {
-            // Permission not actually granted yet, or transient OS error - safe to ignore,
-            // the general audio check keeps working regardless.
-        }
-    }
-
-    private fun teardownMediaSessionMonitoring() {
-        try {
-            mediaSessionManager?.removeOnActiveSessionsChangedListener(activeSessionsListener)
-        } catch (e: Exception) {
-            // ignore
-        }
-        trackedMediaControllers.forEach { runCatching { it.unregisterCallback(mediaControllerCallback) } }
-        trackedMediaControllers.clear()
-        mediaSessionManager = null
-        trustedMediaSessionActive = false
-    }
-
-
     // Landscape auto-safe-position: temporarily overrides the tap point while in
     // landscape (e.g. fullscreen video), without ever touching the user's saved
     // portrait position, which is restored automatically on rotating back.
@@ -223,11 +137,6 @@ class TouchAccessibilityService : AccessibilityService() {
                 currentSettings = settings
                 motionDetector.setSensitivity(settings.sensitivity, settings.customThreshold)
                 activityTracker.updateTimings(settings.confirmationTimeMs, settings.noMotionTimeoutMs)
-                if (settings.preciseYoutubeNetflixDetection) {
-                    setupMediaSessionMonitoringIfPermitted()
-                } else {
-                    teardownMediaSessionMonitoring()
-                }
                 mainHandler.post {
                     applyOverlayVisuals(settings)
                     if (!isLandscapeSafeModeActive) {
@@ -370,7 +279,6 @@ class TouchAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         instance = null
         runCatching { audioManager.unregisterAudioPlaybackCallback(audioPlaybackCallback) }
-        teardownMediaSessionMonitoring()
         stopEngine()
         removeFloatingView()
         removeDebugBadge()
@@ -521,8 +429,7 @@ class TouchAccessibilityService : AccessibilityService() {
                 }
 
                 val mode = currentSettings.detectionMode
-                val audioActive = cachedAudioActive ||
-                    (currentSettings.preciseYoutubeNetflixDetection && trustedMediaSessionActive)
+                val audioActive = cachedAudioActive
 
                 var motionDetected = false
                 var score = 0f
