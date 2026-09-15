@@ -141,7 +141,9 @@ class MainActivity : ComponentActivity() {
                             onBack = { screen = Screen.HOME },
                             onUpdate = { update -> lifecycleScope.launch { update(settingsRepository) } },
                             onShowDetectionPoint = { callServiceOrWarn { it.showDetectionPoint() } },
-                            onHideDetectionPoint = { callServiceOrWarn { it.hideDetectionPoint() } }
+                            onHideDetectionPoint = { callServiceOrWarn { it.hideDetectionPoint() } },
+                            isMediaSessionAccessGranted = isNotificationListenerEnabled(),
+                            onOpenMediaSessionSettings = { openNotificationListenerSettings() }
                         )
                         Screen.ADVANCED -> AdvancedScreen(
                             settings = settings,
@@ -217,6 +219,17 @@ class MainActivity : ComponentActivity() {
     private fun openBatteryOptimizationSettings() {
         runCatching {
             startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+        }
+    }
+
+    private fun isNotificationListenerEnabled(): Boolean {
+        val enabled = Settings.Secure.getString(contentResolver, "enabled_notification_listeners") ?: ""
+        return enabled.contains(packageName)
+    }
+
+    private fun openNotificationListenerSettings() {
+        runCatching {
+            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
         }
     }
 
@@ -599,7 +612,9 @@ private fun VideoDetectionScreen(
     onBack: () -> Unit,
     onUpdate: (suspend (SettingsRepository) -> Unit) -> Unit,
     onShowDetectionPoint: () -> Unit,
-    onHideDetectionPoint: () -> Unit
+    onHideDetectionPoint: () -> Unit,
+    isMediaSessionAccessGranted: Boolean,
+    onOpenMediaSessionSettings: () -> Unit
 ) {
     ScreenScaffold(title = stringResource(R.string.nav_video_detection), onBack = onBack) {
         ToggleRow(stringResource(R.string.vd_enable_smart), settings.videoDetectionEnabled) { v ->
@@ -625,6 +640,24 @@ private fun VideoDetectionScreen(
                     onClick = { onUpdate { it.updateDetectionMode(mode) } }
                 )
             }
+        }
+
+        SectionLabel(stringResource(R.string.vd_precise_yt_netflix))
+        Text(
+            stringResource(R.string.vd_precise_yt_netflix_desc),
+            color = Color.White.copy(alpha = 0.5f),
+            fontSize = 12.sp
+        )
+        ToggleRow(stringResource(R.string.vd_precise_yt_netflix_toggle), settings.preciseYoutubeNetflixDetection) { v ->
+            onUpdate { it.updatePreciseYoutubeNetflixDetection(v) }
+        }
+        if (settings.preciseYoutubeNetflixDetection && !isMediaSessionAccessGranted) {
+            Text(
+                stringResource(R.string.vd_precise_yt_netflix_permission_needed),
+                color = Color(0xFFE74C3C),
+                fontSize = 12.sp
+            )
+            SmallButton(stringResource(R.string.perm_enable), onOpenMediaSessionSettings)
         }
 
         SectionLabel(stringResource(R.string.vd_detection_point))

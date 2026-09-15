@@ -1,4 +1,5 @@
 <resources>
+    <string name="media_session_listener_label">فحص تشغيل Vigil</string>
     <string name="app_name">Vigil</string>
     <string name="accessibility_service_description">يسمح لتطبيق Vigil بتنفيذ النقرة في المكان اللي حددته على الشاشة، وقراءة لقطة من الشاشة عشان يتأكد إن فيديو بيشتغل فعلاً قبل ما يبدأ النقر. مفيش أي حاجة بترفع أو تتحفظ برّه جهازك.</string>
     <string name="shortcut_start_short">تشغيل</string>
@@ -96,6 +97,10 @@
     <string name="vd_detection_method">طريقة الاكتشاف</string>
     <string name="vd_detection_method_desc">الصوت غالبًا أدق بكتير من مراقبة الشاشة - أغلب الفيديوهات بيبقى فيها صوت. المرئي برضه بيساعد في الفيديوهات المكتومة.</string>
     <string name="vd_detection_point">نقطة الاكتشاف</string>
+    <string name="vd_precise_yt_netflix">اكتشاف دقيق ليوتيوب/نتفليكس</string>
+    <string name="vd_precise_yt_netflix_desc">إضافة اختيارية لفحص الصوت اللي فوق: بتسأل أندرويد مباشرة هل يوتيوب أو نتفليكس فيه جلسة تشغيل نشطة دلوقتي - مبنية بالكامل على الأحداث، مفيش استهلاك بطارية إضافي. تطبيقات تانية (تيك توك، إنستجرام، إلخ) عادةً مبتسجلش جلسة أندرويد يقدر يفحصها بالطريقة دي، فبتفضل تستخدم كشف الصوت العام.</string>
+    <string name="vd_precise_yt_netflix_toggle">تفعيل الاكتشاف الدقيق</string>
+    <string name="vd_precise_yt_netflix_permission_needed">محتاج صلاحية الوصول للإشعارات (بتُستخدم بس عشان نعرف حالة التشغيل - أبدًا مش بتقرأ محتوى الإشعارات)</string>
     <string name="vd_detection_point_desc">نقطة سماوية منفصلة بتحدد فين نراقب حركة الفيديو - حطها فوق الفيديو نفسه (زي وسط الشاشة)، بعيدة عن مكان لمسة النقر.</string>
     <string name="vd_show_detection_point">إظهار نقطة الاكتشاف</string>
     <string name="vd_hide">إخفاء</string>
