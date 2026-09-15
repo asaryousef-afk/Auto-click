@@ -756,6 +756,16 @@ private fun AdvancedScreen(
         SectionLabel(stringResource(R.string.adv_battery))
         SmallButton(stringResource(R.string.adv_battery_settings), onOpenBatterySettings)
 
+        SectionLabel(stringResource(R.string.adv_hide_notification))
+        Text(
+            stringResource(R.string.adv_hide_notification_desc),
+            color = Color.White.copy(alpha = 0.5f),
+            fontSize = 12.sp
+        )
+        ToggleRow(stringResource(R.string.adv_hide_notification), !settings.showNotification) { hide ->
+            onUpdate { it.updateShowNotification(!hide) }
+        }
+
         SectionLabel(stringResource(R.string.adv_debug))
         ToggleRow(stringResource(R.string.adv_debug_mode), settings.debugMode) { v -> onUpdate { it.updateDebugMode(v) } }
         if (settings.debugMode) {

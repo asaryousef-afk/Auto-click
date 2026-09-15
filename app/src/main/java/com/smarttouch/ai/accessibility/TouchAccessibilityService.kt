@@ -106,6 +106,8 @@ class TouchAccessibilityService : AccessibilityService() {
 
     private val mainHandler = Handler(Looper.getMainLooper())
     @Volatile private var lastTapAtMs = 0L
+    private var lastNotificationStatusText = "Ready"
+    private var lastNotificationVideoActive = false
 
     // Event-driven audio detection: instead of polling audioManager.isMusicActive
     // every detection cycle, this stays cached and is only updated when Android
@@ -195,6 +197,7 @@ class TouchAccessibilityService : AccessibilityService() {
                 currentSettings = settings
                 motionDetector.setSensitivity(settings.sensitivity, settings.customThreshold)
                 activityTracker.updateTimings(settings.confirmationTimeMs, settings.noMotionTimeoutMs)
+                updateNotification(lastNotificationStatusText, lastNotificationVideoActive)
                 mainHandler.post {
                     applyOverlayVisuals(settings)
                     if (!isLandscapeSafeModeActive) {
@@ -204,7 +207,7 @@ class TouchAccessibilityService : AccessibilityService() {
             }
         }
 
-        updateNotification("Ready", videoActive = false)
+        updateNotification(getString(R.string.notif_status_ready), videoActive = false)
 
         cachedAudioActive = runCatching { audioManager.isMusicActive }.getOrDefault(false)
         runCatching { audioManager.registerAudioPlaybackCallback(audioPlaybackCallback, mainHandler) }
@@ -358,13 +361,13 @@ class TouchAccessibilityService : AccessibilityService() {
 
     fun startEngine() {
         if (!currentSettings.hasTouchPosition) {
-            updateNotification("Set a touch position first", videoActive = false)
+            updateNotification(getString(R.string.notif_status_set_position_first), videoActive = false)
             return
         }
         stateMachine.start()
         motionDetector.reset()
         activityTracker.reset()
-        updateNotification("Detecting video...", videoActive = false)
+        updateNotification(getString(R.string.notif_status_detecting), videoActive = false)
         startDetectionLoop()
     }
 
@@ -374,7 +377,7 @@ class TouchAccessibilityService : AccessibilityService() {
         touchJob?.cancel()
         detectionJob = null
         touchJob = null
-        updateNotification("Stopped", videoActive = false)
+        updateNotification(getString(R.string.notif_status_stopped), videoActive = false)
         pushDebugSnapshot(lastEvent = "Stopped")
     }
 
@@ -382,14 +385,14 @@ class TouchAccessibilityService : AccessibilityService() {
         stateMachine.pause()
         touchJob?.cancel()
         touchJob = null
-        updateNotification("Paused", videoActive = false)
+        updateNotification(getString(R.string.notif_status_paused), videoActive = false)
         pushDebugSnapshot(lastEvent = "Paused")
     }
 
     fun resumeEngine() {
         if (stateMachine.state == ServiceState.PAUSED) {
             stateMachine.resume()
-            updateNotification("Detecting video...", videoActive = false)
+            updateNotification(getString(R.string.notif_status_detecting), videoActive = false)
             startDetectionLoop()
         }
     }
@@ -404,7 +407,7 @@ class TouchAccessibilityService : AccessibilityService() {
     fun testSingleTap() {
         val point = floatingParams?.let { it.x.toFloat() to it.y.toFloat() } ?: safeTouchPoint()
         if (point == null) {
-            updateNotification("Set a touch position first", videoActive = false)
+            updateNotification(getString(R.string.notif_status_set_position_first), videoActive = false)
             return
         }
         val path = Path().apply { moveTo(point.first, point.second) }
@@ -529,13 +532,13 @@ class TouchAccessibilityService : AccessibilityService() {
                 if (active && stateMachine.state == ServiceState.VIDEO_DETECTING) {
                     stateMachine.onVideoActive()
                     stateMachine.onTouchingStarted()
-                    updateNotification("Video active - touching", videoActive = true)
+                    updateNotification(getString(R.string.notif_status_touching), videoActive = true)
                     startTouchLoop()
                 } else if (!active && (stateMachine.state == ServiceState.VIDEO_ACTIVE || stateMachine.state == ServiceState.TOUCHING)) {
                     stateMachine.onVideoInactive()
                     touchJob?.cancel()
                     touchJob = null
-                    updateNotification("Detecting video...", videoActive = false)
+                    updateNotification(getString(R.string.notif_status_detecting), videoActive = false)
                 }
 
                 delay(currentSettings.detectionIntervalMs)
@@ -822,7 +825,7 @@ class TouchAccessibilityService : AccessibilityService() {
         if (added.isFailure) {
             val reason = added.exceptionOrNull()?.javaClass?.simpleName ?: "unknown"
             Toast.makeText(this, getString(R.string.toast_could_not_show_point, reason), Toast.LENGTH_LONG).show()
-            updateNotification("Overlay permission missing - enable it in app settings", videoActive = false)
+            updateNotification(getString(R.string.notif_status_overlay_missing), videoActive = false)
             return
         }
         Toast.makeText(this, getString(R.string.toast_point_shown_at, params.x, params.y), Toast.LENGTH_SHORT).show()
@@ -1050,7 +1053,14 @@ class TouchAccessibilityService : AccessibilityService() {
     }
 
     private fun updateNotification(statusText: String, videoActive: Boolean) {
+        lastNotificationStatusText = statusText
+        lastNotificationVideoActive = videoActive
         val manager = getSystemService(NotificationManager::class.java)
+
+        if (!currentSettings.showNotification) {
+            manager.cancel(NOTIF_ID)
+            return
+        }
 
         val contentIntent = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java),
@@ -1070,9 +1080,9 @@ class TouchAccessibilityService : AccessibilityService() {
             .setSmallIcon(R.drawable.ic_notification_eye_of_horus)
             .setOngoing(true)
             .setContentIntent(contentIntent)
-            .addAction(0, "Start", actionIntent(ACTION_START, 1))
-            .addAction(0, "Pause", actionIntent(ACTION_PAUSE, 2))
-            .addAction(0, "STOP", actionIntent(ACTION_STOP, 3))
+            .addAction(0, getString(R.string.notif_action_start), actionIntent(ACTION_START, 1))
+            .addAction(0, getString(R.string.notif_action_pause), actionIntent(ACTION_PAUSE, 2))
+            .addAction(0, getString(R.string.notif_action_stop), actionIntent(ACTION_STOP, 3))
 
         manager.notify(NOTIF_ID, builder.build())
     }

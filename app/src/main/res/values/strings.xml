@@ -55,6 +55,18 @@
     <!-- Notification -->
     <string name="notif_channel_name">Vigil status</string>
     <string name="notif_title">Vigil - %1$s</string>
+    <string name="notif_status_ready">Ready</string>
+    <string name="notif_status_set_position_first">Set a touch position first</string>
+    <string name="notif_status_detecting">Detecting video...</string>
+    <string name="notif_status_stopped">Stopped</string>
+    <string name="notif_status_paused">Paused</string>
+    <string name="notif_status_touching">Video active - touching</string>
+    <string name="notif_status_overlay_missing">Overlay permission missing - enable it in app settings</string>
+    <string name="notif_action_start">Start</string>
+    <string name="notif_action_pause">Pause</string>
+    <string name="notif_action_stop">STOP</string>
+    <string name="adv_hide_notification">Hide notification</string>
+    <string name="adv_hide_notification_desc">Hides the ongoing status notification entirely. Vigil keeps running exactly the same either way - this only removes the visual reminder. You can still Start/Stop from this screen at any time.</string>
 
     <!-- Saved setups -->
     <string name="saved_setups_title">Saved setups</string>

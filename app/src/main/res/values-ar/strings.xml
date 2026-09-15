@@ -55,6 +55,18 @@
     <!-- Notification -->
     <string name="notif_channel_name">حالة Vigil</string>
     <string name="notif_title">Vigil - %1$s</string>
+    <string name="notif_status_ready">جاهز</string>
+    <string name="notif_status_set_position_first">حدد مكان اللمسة الأول</string>
+    <string name="notif_status_detecting">بيكتشف الفيديو...</string>
+    <string name="notif_status_stopped">متوقف</string>
+    <string name="notif_status_paused">متوقف مؤقتًا</string>
+    <string name="notif_status_touching">فيديو شغّال - بينقر</string>
+    <string name="notif_status_overlay_missing">صلاحية الظهور فوق التطبيقات ناقصة - فعّلها من إعدادات التطبيق</string>
+    <string name="notif_action_start">تشغيل</string>
+    <string name="notif_action_pause">إيقاف مؤقت</string>
+    <string name="notif_action_stop">إيقاف</string>
+    <string name="adv_hide_notification">إخفاء الإشعار</string>
+    <string name="adv_hide_notification_desc">بيخفي إشعار الحالة المستمر خالص. Vigil يفضل شغّال بنفس الطريقة تمامًا - ده بس بيشيل التذكير البصري. تقدر لسه تشغّل/توقف من الشاشة دي في أي وقت.</string>
 
     <!-- Saved setups -->
     <string name="saved_setups_title">الأوضاع المحفوظة</string>

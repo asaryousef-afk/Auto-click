@@ -41,7 +41,8 @@ data class TouchSettings(
     val startOnBoot: Boolean = false,
     val debugMode: Boolean = false,
     val preciseYoutubeNetflixDetection: Boolean = false,
-    val savedSetups: List<SavedSetup> = emptyList()
+    val savedSetups: List<SavedSetup> = emptyList(),
+    val showNotification: Boolean = true
 ) {
     val hasTouchPosition: Boolean get() = touchX >= 0f && touchY >= 0f
     val hasDetectionPosition: Boolean get() = detectionX >= 0f && detectionY >= 0f
@@ -71,6 +72,7 @@ class SettingsRepository(private val context: Context) {
         val NO_MOTION_TIMEOUT_MS = longPreferencesKey("no_motion_timeout_ms")
         val START_ON_BOOT = booleanPreferencesKey("start_on_boot")
         val DEBUG_MODE = booleanPreferencesKey("debug_mode")
+        val SHOW_NOTIFICATION = booleanPreferencesKey("show_notification")
         val PRECISE_YT_NETFLIX_DETECTION = booleanPreferencesKey("precise_yt_netflix_detection")
         val SAVED_SETUPS = stringPreferencesKey("saved_setups")
     }
@@ -103,7 +105,8 @@ class SettingsRepository(private val context: Context) {
             startOnBoot = prefs[Keys.START_ON_BOOT] ?: false,
             debugMode = prefs[Keys.DEBUG_MODE] ?: false,
             preciseYoutubeNetflixDetection = prefs[Keys.PRECISE_YT_NETFLIX_DETECTION] ?: false,
-            savedSetups = parseSetups(prefs[Keys.SAVED_SETUPS] ?: "")
+            savedSetups = parseSetups(prefs[Keys.SAVED_SETUPS] ?: ""),
+            showNotification = prefs[Keys.SHOW_NOTIFICATION] ?: true
         )
     }
 
@@ -137,6 +140,7 @@ class SettingsRepository(private val context: Context) {
     suspend fun updateNoMotionTimeout(ms: Long) = edit(Keys.NO_MOTION_TIMEOUT_MS, ms)
     suspend fun updateStartOnBoot(enabled: Boolean) = edit(Keys.START_ON_BOOT, enabled)
     suspend fun updateDebugMode(enabled: Boolean) = edit(Keys.DEBUG_MODE, enabled)
+    suspend fun updateShowNotification(enabled: Boolean) = edit(Keys.SHOW_NOTIFICATION, enabled)
     suspend fun updatePreciseYoutubeNetflixDetection(enabled: Boolean) = edit(Keys.PRECISE_YT_NETFLIX_DETECTION, enabled)
 
     /** Saves the given position under this name, replacing any existing setup
