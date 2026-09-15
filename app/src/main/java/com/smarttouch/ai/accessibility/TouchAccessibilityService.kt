@@ -106,6 +106,7 @@ class TouchAccessibilityService : AccessibilityService() {
 
     private val mainHandler = Handler(Looper.getMainLooper())
     @Volatile private var lastTapAtMs = 0L
+    @Volatile private var didAttemptAutoStart = false
     private var lastNotificationStatusText = "Ready"
     private var lastNotificationVideoActive = false
 
@@ -198,6 +199,16 @@ class TouchAccessibilityService : AccessibilityService() {
                 motionDetector.setSensitivity(settings.sensitivity, settings.customThreshold)
                 activityTracker.updateTimings(settings.confirmationTimeMs, settings.noMotionTimeoutMs)
                 updateNotification(lastNotificationStatusText, lastNotificationVideoActive)
+                if (!didAttemptAutoStart) {
+                    didAttemptAutoStart = true
+                    // This runs whenever the accessibility service (re)connects, which
+                    // includes automatically right after the device finishes booting if
+                    // accessibility was already enabled before the restart - so this is
+                    // the actual "start on boot" behavior, not just an app-open check.
+                    if (settings.startOnBoot && settings.hasTouchPosition) {
+                        startEngine()
+                    }
+                }
                 mainHandler.post {
                     applyOverlayVisuals(settings)
                     if (!isLandscapeSafeModeActive) {
