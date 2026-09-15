@@ -106,6 +106,7 @@ class TouchAccessibilityService : AccessibilityService() {
 
     private val mainHandler = Handler(Looper.getMainLooper())
     @Volatile private var lastTapAtMs = 0L
+    @Volatile private var didAttemptAutoStart = false
     private var lastNotificationStatusText = "Ready"
     private var lastNotificationVideoActive = false
 
@@ -198,6 +199,12 @@ class TouchAccessibilityService : AccessibilityService() {
                 motionDetector.setSensitivity(settings.sensitivity, settings.customThreshold)
                 activityTracker.updateTimings(settings.confirmationTimeMs, settings.noMotionTimeoutMs)
                 updateNotification(lastNotificationStatusText, lastNotificationVideoActive)
+                if (!didAttemptAutoStart) {
+                    didAttemptAutoStart = true
+                    if (settings.startOnBoot && settings.hasTouchPosition) {
+                        startEngine()
+                    }
+                }
                 mainHandler.post {
                     applyOverlayVisuals(settings)
                     if (!isLandscapeSafeModeActive) {
