@@ -296,7 +296,7 @@ private fun HomeScreen(
 
         InfoRow(stringResource(R.string.label_touch_position), if (settings.hasTouchPosition) "${settings.touchX.toInt()}, ${settings.touchY.toInt()}" else stringResource(R.string.value_not_set))
         InfoRow(stringResource(R.string.label_interval), stringResource(R.string.value_ms, TouchIntervalCalculator.resolve(settings.intervalMs, settings.customIntervalMs)))
-        InfoRow(stringResource(R.string.label_sensitivity), settings.sensitivity.name)
+        InfoRow(stringResource(R.string.label_sensitivity), sensitivityLabel(settings.sensitivity))
         InfoRow(stringResource(R.string.label_clean_screen_mode), if (settings.cleanScreenMode) stringResource(R.string.on) else stringResource(R.string.off))
 
         Spacer(Modifier.height(24.dp))
@@ -436,29 +436,29 @@ private fun TouchSettingsScreen(
     onShrinkDot: () -> Unit
 ) {
     ScreenScaffold(title = stringResource(R.string.nav_touch_settings), onBack = onBack) {
-        Text("Drag the on-screen dot to position your tap, then hide it.", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
+        Text(stringResource(R.string.ts_drag_hint), color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            SmallButton("Show point", onShowOverlay)
-            SmallButton("Hide point", onHideOverlay)
-            SmallButton("Test tap", onTestTouch)
+            SmallButton(stringResource(R.string.ts_show_point), onShowOverlay)
+            SmallButton(stringResource(R.string.ts_hide_point), onHideOverlay)
+            SmallButton(stringResource(R.string.ts_test_tap), onTestTouch)
         }
 
-        SectionLabel("Dot size")
+        SectionLabel(stringResource(R.string.ts_dot_size))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            SmallButton("- Smaller", onShrinkDot)
-            Text("${settings.dotSizeDp.toInt()}dp", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
-            SmallButton("+ Bigger", onGrowDot)
+            SmallButton(stringResource(R.string.ts_smaller), onShrinkDot)
+            Text(stringResource(R.string.ts_dp, settings.dotSizeDp.toInt()), color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+            SmallButton(stringResource(R.string.ts_bigger), onGrowDot)
         }
         Text(
-            "Tip: make it bigger while positioning it, then shrink it back down once it's where you want it.",
+            stringResource(R.string.ts_dot_size_tip),
             color = Color.White.copy(alpha = 0.4f),
             fontSize = 11.sp
         )
 
-        SectionLabel("Nudge position")
+        SectionLabel(stringResource(R.string.ts_nudge_position))
         Text(
-            "Taps, not drags - use this if dragging stops at the navigation bar (that strip belongs to the system, not this app, so no drag can cross it).",
+            stringResource(R.string.ts_nudge_desc),
             color = Color.White.copy(alpha = 0.4f),
             fontSize = 11.sp
         )
@@ -490,48 +490,48 @@ private fun TouchSettingsScreen(
             })
         }
 
-        SectionLabel("Interval")
+        SectionLabel(stringResource(R.string.label_interval))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TouchIntervalCalculator.presetsMs.forEach { preset ->
                 ChoiceChip(
-                    label = "${preset}ms",
+                    label = stringResource(R.string.ts_ms, preset.toInt()),
                     selected = settings.intervalMs == preset,
                     onClick = { onUpdate { it.updateInterval(preset) } }
                 )
             }
             ChoiceChip(
-                label = "Custom",
+                label = stringResource(R.string.ts_custom),
                 selected = settings.intervalMs == TouchIntervalCalculator.CUSTOM_SENTINEL,
                 onClick = { onUpdate { it.updateInterval(TouchIntervalCalculator.CUSTOM_SENTINEL) } }
             )
         }
         if (settings.intervalMs == TouchIntervalCalculator.CUSTOM_SENTINEL) {
             LabeledSlider(
-                label = "Custom interval: ${settings.customIntervalMs}ms",
+                label = stringResource(R.string.ts_custom_interval, settings.customIntervalMs.toInt()),
                 value = settings.customIntervalMs.toFloat(),
                 range = 100f..10000f,
                 onChange = { v -> onUpdate { it.updateCustomInterval(v.toLong()) } }
             )
         }
 
-        SectionLabel("Touch duration")
+        SectionLabel(stringResource(R.string.ts_touch_duration))
         LabeledSlider(
-            label = "${settings.touchDurationMs}ms",
+            label = stringResource(R.string.ts_ms, settings.touchDurationMs.toInt()),
             value = settings.touchDurationMs.toFloat(),
             range = 10f..500f,
             onChange = { v -> onUpdate { it.updateTouchDuration(v.toLong()) } }
         )
 
-        SectionLabel("Overlay dot")
+        SectionLabel(stringResource(R.string.ts_overlay_dot))
         LabeledSlider(
-            label = "Opacity: ${(settings.overlayOpacity * 100).toInt()}%",
+            label = stringResource(R.string.ts_opacity, (settings.overlayOpacity * 100).toInt()),
             value = settings.overlayOpacity,
             range = 0.15f..1f,
             onChange = { v -> onUpdate { it.updateOverlayOpacity(v) } }
         )
-        ToggleRow("Lock position", settings.overlayLocked) { v -> onUpdate { it.updateOverlayLocked(v) } }
+        ToggleRow(stringResource(R.string.ts_lock_position), settings.overlayLocked) { v -> onUpdate { it.updateOverlayLocked(v) } }
         Text(
-            "When on, the point never moves on its own for any reason - not dragging, not rotating to landscape and back, not hiding it. It always taps exactly where you left it.",
+            stringResource(R.string.ts_lock_desc),
             color = Color.White.copy(alpha = 0.4f),
             fontSize = 11.sp
         )
@@ -602,53 +602,53 @@ private fun VideoDetectionScreen(
     onHideDetectionPoint: () -> Unit
 ) {
     ScreenScaffold(title = stringResource(R.string.nav_video_detection), onBack = onBack) {
-        ToggleRow("Enable smart video detection", settings.videoDetectionEnabled) { v ->
+        ToggleRow(stringResource(R.string.vd_enable_smart), settings.videoDetectionEnabled) { v ->
             onUpdate { it.updateVideoDetectionEnabled(v) }
         }
         Text(
-            "When off, Vigil taps on a fixed interval the whole time the engine is running - it will not check whether a video is playing.",
+            stringResource(R.string.vd_off_desc),
             color = Color.White.copy(alpha = 0.5f),
             fontSize = 12.sp
         )
 
-        SectionLabel("Detection method")
+        SectionLabel(stringResource(R.string.vd_detection_method))
         Text(
-            "Audio is usually far more reliable than watching the screen - most videos play sound. Visual can still help for muted videos.",
+            stringResource(R.string.vd_detection_method_desc),
             color = Color.White.copy(alpha = 0.5f),
             fontSize = 12.sp
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             DetectionMode.entries.forEach { mode ->
                 ChoiceChip(
-                    label = mode.name,
+                    label = detectionModeLabel(mode),
                     selected = settings.detectionMode == mode,
                     onClick = { onUpdate { it.updateDetectionMode(mode) } }
                 )
             }
         }
 
-        SectionLabel("Detection point")
+        SectionLabel(stringResource(R.string.vd_detection_point))
         Text(
-            "A separate cyan point marking where to watch for video motion - place it over the actual video (e.g. screen center), independent of where the tap point is.",
+            stringResource(R.string.vd_detection_point_desc),
             color = Color.White.copy(alpha = 0.5f),
             fontSize = 12.sp
         )
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            SmallButton("Show detection point", onShowDetectionPoint)
-            SmallButton("Hide", onHideDetectionPoint)
+            SmallButton(stringResource(R.string.vd_show_detection_point), onShowDetectionPoint)
+            SmallButton(stringResource(R.string.vd_hide), onHideDetectionPoint)
         }
         LabeledSlider(
-            label = "Detection area size: ${settings.detectionRegionSizeDp.toInt()}dp",
+            label = stringResource(R.string.vd_detection_area_size, settings.detectionRegionSizeDp.toInt()),
             value = settings.detectionRegionSizeDp,
             range = 60f..600f,
             onChange = { v -> onUpdate { it.updateDetectionRegionSize(v) } }
         )
 
-        SectionLabel("Sensitivity")
+        SectionLabel(stringResource(R.string.label_sensitivity))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Sensitivity.entries.forEach { s ->
                 ChoiceChip(
-                    label = s.name,
+                    label = sensitivityLabel(s),
                     selected = settings.sensitivity == s,
                     onClick = { onUpdate { it.updateSensitivity(s) } }
                 )
@@ -656,32 +656,32 @@ private fun VideoDetectionScreen(
         }
         if (settings.sensitivity == Sensitivity.CUSTOM) {
             LabeledSlider(
-                label = "Custom threshold: ${"%.3f".format(settings.customThreshold)}",
+                label = stringResource(R.string.vd_custom_threshold, "%.3f".format(settings.customThreshold)),
                 value = settings.customThreshold,
                 range = 0.005f..0.15f,
                 onChange = { v -> onUpdate { it.updateCustomThreshold(v) } }
             )
         }
 
-        SectionLabel("Detection interval")
+        SectionLabel(stringResource(R.string.vd_detection_interval))
         LabeledSlider(
-            label = "${settings.detectionIntervalMs}ms between frame checks",
+            label = stringResource(R.string.vd_detection_interval_desc, settings.detectionIntervalMs.toInt()),
             value = settings.detectionIntervalMs.toFloat(),
             range = 200f..2000f,
             onChange = { v -> onUpdate { it.updateDetectionInterval(v.toLong()) } }
         )
 
-        SectionLabel("Confirmation time")
+        SectionLabel(stringResource(R.string.vd_confirmation_time))
         LabeledSlider(
-            label = "${settings.confirmationTimeMs}ms of sustained motion required",
+            label = stringResource(R.string.vd_confirmation_time_desc, settings.confirmationTimeMs.toInt()),
             value = settings.confirmationTimeMs.toFloat(),
             range = 200f..3000f,
             onChange = { v -> onUpdate { it.updateConfirmationTime(v.toLong()) } }
         )
 
-        SectionLabel("No-motion timeout")
+        SectionLabel(stringResource(R.string.vd_no_motion_timeout))
         LabeledSlider(
-            label = "${settings.noMotionTimeoutMs}ms of stillness before stopping",
+            label = stringResource(R.string.vd_no_motion_timeout_desc, settings.noMotionTimeoutMs.toInt()),
             value = settings.noMotionTimeoutMs.toFloat(),
             range = 300f..5000f,
             onChange = { v -> onUpdate { it.updateNoMotionTimeout(v.toLong()) } }
@@ -689,7 +689,7 @@ private fun VideoDetectionScreen(
 
         Spacer(Modifier.height(4.dp))
         Text(
-            "Note: this uses on-device screen motion analysis, not a perfect video classifier - a live wallpaper or fast animation can also register as motion. Tune sensitivity and timing above if it's too eager or too slow.",
+            stringResource(R.string.vd_note),
             color = Color.White.copy(alpha = 0.4f),
             fontSize = 11.sp
         )
@@ -735,35 +735,35 @@ private fun AdvancedScreen(
             })
         }
 
-        ToggleRow("Start on boot", settings.startOnBoot) { v -> onUpdate { it.updateStartOnBoot(v) } }
+        ToggleRow(stringResource(R.string.adv_start_on_boot), settings.startOnBoot) { v -> onUpdate { it.updateStartOnBoot(v) } }
         Text(
-            "Note: this saves your preference, but Android requires accessibility services to be manually re-enabled by you after some device restarts for security reasons - this is an OS restriction, not something an app can bypass.",
+            stringResource(R.string.adv_start_on_boot_desc),
             color = Color.White.copy(alpha = 0.4f),
             fontSize = 11.sp
         )
 
-        SectionLabel("Live motion overlay")
+        SectionLabel(stringResource(R.string.adv_live_overlay))
         Text(
-            "Shows a small badge anywhere on screen with the live motion score and state, so you can see what the detector is doing while using another app.",
+            stringResource(R.string.adv_live_overlay_desc),
             color = Color.White.copy(alpha = 0.5f),
             fontSize = 12.sp
         )
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            SmallButton("Show overlay", onShowLiveOverlay)
-            SmallButton("Hide overlay", onHideLiveOverlay)
+            SmallButton(stringResource(R.string.adv_show_overlay), onShowLiveOverlay)
+            SmallButton(stringResource(R.string.adv_hide_overlay), onHideLiveOverlay)
         }
 
-        SectionLabel("Battery")
-        SmallButton("Battery optimization settings", onOpenBatterySettings)
+        SectionLabel(stringResource(R.string.adv_battery))
+        SmallButton(stringResource(R.string.adv_battery_settings), onOpenBatterySettings)
 
-        SectionLabel("Debug")
-        ToggleRow("Debug mode", settings.debugMode) { v -> onUpdate { it.updateDebugMode(v) } }
+        SectionLabel(stringResource(R.string.adv_debug))
+        ToggleRow(stringResource(R.string.adv_debug_mode), settings.debugMode) { v -> onUpdate { it.updateDebugMode(v) } }
         if (settings.debugMode) {
-            SmallButton("Open debug view", onOpenDebug)
+            SmallButton(stringResource(R.string.adv_open_debug), onOpenDebug)
         }
 
-        SectionLabel("Reset")
-        SmallButton(label = "Reset all settings", onClick = { onUpdate { it.resetAll() } }, danger = true)
+        SectionLabel(stringResource(R.string.adv_reset))
+        SmallButton(label = stringResource(R.string.adv_reset_all), onClick = { onUpdate { it.resetAll() } }, danger = true)
     }
 }
 
@@ -772,14 +772,29 @@ private fun AdvancedScreen(
 @Composable
 private fun DebugScreen(snapshot: DebugSnapshot, onBack: () -> Unit) {
     ScreenScaffold(title = stringResource(R.string.screen_title_debug), onBack = onBack) {
-        InfoRow("State", snapshot.state.name)
-        InfoRow("Video active", snapshot.videoActive.toString())
-        InfoRow("Motion score", "%.4f".format(snapshot.motionScore))
-        InfoRow("Threshold", "%.4f".format(snapshot.threshold))
-        InfoRow("Touch position", "${snapshot.touchX.toInt()}, ${snapshot.touchY.toInt()}")
-        InfoRow("Sampling interval", "${snapshot.samplingIntervalMs}ms")
-        InfoRow("Last event", snapshot.lastEvent)
+        InfoRow(stringResource(R.string.dbg_state), snapshot.state.name)
+        InfoRow(stringResource(R.string.dbg_video_active), snapshot.videoActive.toString())
+        InfoRow(stringResource(R.string.dbg_motion_score), "%.4f".format(snapshot.motionScore))
+        InfoRow(stringResource(R.string.dbg_threshold), "%.4f".format(snapshot.threshold))
+        InfoRow(stringResource(R.string.label_touch_position), "${snapshot.touchX.toInt()}, ${snapshot.touchY.toInt()}")
+        InfoRow(stringResource(R.string.dbg_sampling_interval), stringResource(R.string.ts_ms, snapshot.samplingIntervalMs.toInt()))
+        InfoRow(stringResource(R.string.dbg_last_event), snapshot.lastEvent)
     }
+}
+
+@Composable
+private fun detectionModeLabel(mode: DetectionMode): String = when (mode) {
+    DetectionMode.AUDIO -> stringResource(R.string.detection_mode_audio)
+    DetectionMode.VISUAL -> stringResource(R.string.detection_mode_visual)
+    DetectionMode.EITHER -> stringResource(R.string.detection_mode_either)
+}
+
+@Composable
+private fun sensitivityLabel(s: Sensitivity): String = when (s) {
+    Sensitivity.LOW -> stringResource(R.string.sensitivity_low)
+    Sensitivity.MEDIUM -> stringResource(R.string.sensitivity_medium)
+    Sensitivity.HIGH -> stringResource(R.string.sensitivity_high)
+    Sensitivity.CUSTOM -> stringResource(R.string.sensitivity_custom)
 }
 
 // ---------------- Shared small components ----------------

@@ -39,6 +39,17 @@
     <string name="toast_service_not_connected">Accessibility service isn\'t connected. Turn it off and on again in Settings &gt; Accessibility.</string>
     <string name="toast_enable_overlay_settings_first">Enable \"Display over other apps\" for Vigil in Settings first</string>
     <string name="toast_enable_overlay_first">Enable \"Display over other apps\" for Vigil first</string>
+    <string name="toast_point_already_showing">Point already showing at %1$d, %2$d</string>
+    <string name="toast_could_not_show_point">Couldn\'t show the point: %1$s</string>
+    <string name="toast_point_shown_at">Point shown at %1$d, %2$d</string>
+    <string name="toast_no_point_showing">No point currently showing</string>
+    <string name="toast_point_hidden">Point hidden</string>
+    <string name="toast_detection_point_already_showing">Detection point already showing</string>
+    <string name="toast_could_not_show_detection_point">Couldn\'t show detection point: %1$s</string>
+    <string name="toast_detection_point_shown_at">Detection point shown at %1$d, %2$d</string>
+    <string name="toast_no_detection_point_showing">No detection point currently showing</string>
+    <string name="toast_detection_point_hidden">Detection point hidden</string>
+    <string name="toast_could_not_show_live_overlay">Couldn\'t show live overlay: %1$s</string>
 
     <!-- Notification -->
     <string name="notif_channel_name">Vigil status</string>
@@ -57,4 +68,74 @@
     <string name="language_title">App language</string>
     <string name="language_desc">Overrides the device language just for this app.</string>
     <string name="language_system">System default</string>
+
+    <!-- Touch Settings -->
+    <string name="ts_drag_hint">Drag the on-screen dot to position your tap, then hide it.</string>
+    <string name="ts_show_point">Show point</string>
+    <string name="ts_hide_point">Hide point</string>
+    <string name="ts_test_tap">Test tap</string>
+    <string name="ts_dot_size">Dot size</string>
+    <string name="ts_smaller">- Smaller</string>
+    <string name="ts_bigger">+ Bigger</string>
+    <string name="ts_dot_size_tip">Tip: make it bigger while positioning it, then shrink it back down once it\'s where you want it.</string>
+    <string name="ts_nudge_position">Nudge position</string>
+    <string name="ts_nudge_desc">Taps, not drags - use this if dragging stops at the navigation bar (that strip belongs to the system, not this app, so no drag can cross it).</string>
+    <string name="ts_custom">Custom</string>
+    <string name="ts_custom_interval">Custom interval: %1$dms</string>
+    <string name="ts_touch_duration">Touch duration</string>
+    <string name="ts_ms">%1$dms</string>
+    <string name="ts_dp">%1$ddp</string>
+    <string name="ts_overlay_dot">Overlay dot</string>
+    <string name="ts_opacity">Opacity: %1$d%%</string>
+    <string name="ts_lock_position">Lock position</string>
+    <string name="ts_lock_desc">When on, the point never moves on its own for any reason - not dragging, not rotating to landscape and back, not hiding it. It always taps exactly where you left it.</string>
+
+    <!-- Video Detection -->
+    <string name="vd_enable_smart">Enable smart video detection</string>
+    <string name="vd_off_desc">When off, Vigil taps on a fixed interval the whole time the engine is running - it will not check whether a video is playing.</string>
+    <string name="vd_detection_method">Detection method</string>
+    <string name="vd_detection_method_desc">Audio is usually far more reliable than watching the screen - most videos play sound. Visual can still help for muted videos.</string>
+    <string name="vd_detection_point">Detection point</string>
+    <string name="vd_detection_point_desc">A separate cyan point marking where to watch for video motion - place it over the actual video (e.g. screen center), independent of where the tap point is.</string>
+    <string name="vd_show_detection_point">Show detection point</string>
+    <string name="vd_hide">Hide</string>
+    <string name="vd_detection_area_size">Detection area size: %1$ddp</string>
+    <string name="vd_custom_threshold">Custom threshold: %1$s</string>
+    <string name="vd_detection_interval">Detection interval</string>
+    <string name="vd_detection_interval_desc">%1$dms between frame checks</string>
+    <string name="vd_confirmation_time">Confirmation time</string>
+    <string name="vd_confirmation_time_desc">%1$dms of sustained motion required</string>
+    <string name="vd_no_motion_timeout">No-motion timeout</string>
+    <string name="vd_no_motion_timeout_desc">%1$dms of stillness before stopping</string>
+    <string name="vd_note">Note: this uses on-device screen motion analysis, not a perfect video classifier - a live wallpaper or fast animation can also register as motion. Tune sensitivity and timing above if it\'s too eager or too slow.</string>
+    <string name="detection_mode_audio">AUDIO</string>
+    <string name="detection_mode_visual">VISUAL</string>
+    <string name="detection_mode_either">EITHER</string>
+    <string name="sensitivity_low">LOW</string>
+    <string name="sensitivity_medium">MEDIUM</string>
+    <string name="sensitivity_high">HIGH</string>
+    <string name="sensitivity_custom">CUSTOM</string>
+
+    <!-- Advanced -->
+    <string name="adv_start_on_boot">Start on boot</string>
+    <string name="adv_start_on_boot_desc">Note: this saves your preference, but Android requires accessibility services to be manually re-enabled by you after some device restarts for security reasons - this is an OS restriction, not something an app can bypass.</string>
+    <string name="adv_live_overlay">Live motion overlay</string>
+    <string name="adv_live_overlay_desc">Shows a small badge anywhere on screen with the live motion score and state, so you can see what the detector is doing while using another app.</string>
+    <string name="adv_show_overlay">Show overlay</string>
+    <string name="adv_hide_overlay">Hide overlay</string>
+    <string name="adv_battery">Battery</string>
+    <string name="adv_battery_settings">Battery optimization settings</string>
+    <string name="adv_debug">Debug</string>
+    <string name="adv_debug_mode">Debug mode</string>
+    <string name="adv_open_debug">Open debug view</string>
+    <string name="adv_reset">Reset</string>
+    <string name="adv_reset_all">Reset all settings</string>
+
+    <!-- Debug screen -->
+    <string name="dbg_state">State</string>
+    <string name="dbg_video_active">Video active</string>
+    <string name="dbg_motion_score">Motion score</string>
+    <string name="dbg_threshold">Threshold</string>
+    <string name="dbg_sampling_interval">Sampling interval</string>
+    <string name="dbg_last_event">Last event</string>
 </resources>

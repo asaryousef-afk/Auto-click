@@ -39,6 +39,17 @@
     <string name="toast_service_not_connected">خدمة إمكانية الوصول مش متصلة. اقفلها وشغّلها تاني من الإعدادات &gt; إمكانية الوصول.</string>
     <string name="toast_enable_overlay_settings_first">فعّل \"الظهور فوق التطبيقات الأخرى\" لتطبيق Vigil من الإعدادات الأول</string>
     <string name="toast_enable_overlay_first">فعّل \"الظهور فوق التطبيقات الأخرى\" لتطبيق Vigil الأول</string>
+    <string name="toast_point_already_showing">النقطة ظاهرة بالفعل في %1$d, %2$d</string>
+    <string name="toast_could_not_show_point">مقدرش أظهر النقطة: %1$s</string>
+    <string name="toast_point_shown_at">النقطة ظهرت في %1$d, %2$d</string>
+    <string name="toast_no_point_showing">مفيش نقطة ظاهرة دلوقتي</string>
+    <string name="toast_point_hidden">اتخفت النقطة</string>
+    <string name="toast_detection_point_already_showing">نقطة الاكتشاف ظاهرة بالفعل</string>
+    <string name="toast_could_not_show_detection_point">مقدرش أظهر نقطة الاكتشاف: %1$s</string>
+    <string name="toast_detection_point_shown_at">نقطة الاكتشاف ظهرت في %1$d, %2$d</string>
+    <string name="toast_no_detection_point_showing">مفيش نقطة اكتشاف ظاهرة دلوقتي</string>
+    <string name="toast_detection_point_hidden">اتخفت نقطة الاكتشاف</string>
+    <string name="toast_could_not_show_live_overlay">مقدرش أظهر الشارة المباشرة: %1$s</string>
 
     <!-- Notification -->
     <string name="notif_channel_name">حالة Vigil</string>
@@ -57,4 +68,74 @@
     <string name="language_title">لغة التطبيق</string>
     <string name="language_desc">بتغيّر لغة التطبيق ده بس، من غير ما تأثر على باقي الموبايل.</string>
     <string name="language_system">لغة الجهاز</string>
+
+    <!-- Touch Settings -->
+    <string name="ts_drag_hint">اسحب النقطة على الشاشة لتحديد مكان اللمسة، وبعدين اخفيها.</string>
+    <string name="ts_show_point">إظهار النقطة</string>
+    <string name="ts_hide_point">إخفاء النقطة</string>
+    <string name="ts_test_tap">تجربة لمسة</string>
+    <string name="ts_dot_size">حجم النقطة</string>
+    <string name="ts_smaller">- أصغر</string>
+    <string name="ts_bigger">+ أكبر</string>
+    <string name="ts_dot_size_tip">نصيحة: كبّرها وانت بتحدد مكانها، وبعدين صغّرها تاني لما توصل للمكان المناسب.</string>
+    <string name="ts_nudge_position">تحريك دقيق للنقطة</string>
+    <string name="ts_nudge_desc">دوس، مش سحب - استخدمها لو السحب بيقف عند شريط التنقل (الشريط ده ملك النظام، مش التطبيق، فمفيش سحب يعديه).</string>
+    <string name="ts_custom">مخصص</string>
+    <string name="ts_custom_interval">فاصل زمني مخصص: %1$d مللي ثانية</string>
+    <string name="ts_touch_duration">مدة اللمسة</string>
+    <string name="ts_ms">%1$d مللي ثانية</string>
+    <string name="ts_dp">%1$d dp</string>
+    <string name="ts_overlay_dot">النقطة العائمة</string>
+    <string name="ts_opacity">الشفافية: %1$d%%</string>
+    <string name="ts_lock_position">قفل مكان النقطة</string>
+    <string name="ts_lock_desc">لما يكون شغّال، النقطة متتحركش لوحدها لأي سبب - مش سحب، مش الدوران للوضع الأفقي والرجوع، مش الإخفاء. دايمًا بتنقر بالظبط في المكان اللي سبتها فيه.</string>
+
+    <!-- Video Detection -->
+    <string name="vd_enable_smart">تفعيل اكتشاف الفيديو الذكي</string>
+    <string name="vd_off_desc">لما يكون متوقف، Vigil بينقر بفاصل زمني ثابت طول ما المحرك شغّال - مش هيتأكد لو فيه فيديو شغّال ولا لأ.</string>
+    <string name="vd_detection_method">طريقة الاكتشاف</string>
+    <string name="vd_detection_method_desc">الصوت غالبًا أدق بكتير من مراقبة الشاشة - أغلب الفيديوهات بيبقى فيها صوت. المرئي برضه بيساعد في الفيديوهات المكتومة.</string>
+    <string name="vd_detection_point">نقطة الاكتشاف</string>
+    <string name="vd_detection_point_desc">نقطة سماوية منفصلة بتحدد فين نراقب حركة الفيديو - حطها فوق الفيديو نفسه (زي وسط الشاشة)، بعيدة عن مكان لمسة النقر.</string>
+    <string name="vd_show_detection_point">إظهار نقطة الاكتشاف</string>
+    <string name="vd_hide">إخفاء</string>
+    <string name="vd_detection_area_size">حجم منطقة الاكتشاف: %1$d dp</string>
+    <string name="vd_custom_threshold">الحد المخصص: %1$s</string>
+    <string name="vd_detection_interval">فاصل الاكتشاف</string>
+    <string name="vd_detection_interval_desc">%1$d مللي ثانية بين كل فحص للصورة</string>
+    <string name="vd_confirmation_time">وقت التأكيد</string>
+    <string name="vd_confirmation_time_desc">%1$d مللي ثانية من الحركة المستمرة المطلوبة</string>
+    <string name="vd_no_motion_timeout">مهلة انعدام الحركة</string>
+    <string name="vd_no_motion_timeout_desc">%1$d مللي ثانية من السكون قبل ما يتوقف</string>
+    <string name="vd_note">ملاحظة: ده بيستخدم تحليل حركة الشاشة على الجهاز نفسه، مش تصنيف مثالي للفيديو - خلفية متحركة أو أنيميشن سريع ممكن يتسجل كحركة برضه. عدّل الحساسية والتوقيت فوق لو حساس أوي أو بطيء أوي.</string>
+    <string name="detection_mode_audio">صوت</string>
+    <string name="detection_mode_visual">مرئي</string>
+    <string name="detection_mode_either">أي منهم</string>
+    <string name="sensitivity_low">منخفضة</string>
+    <string name="sensitivity_medium">متوسطة</string>
+    <string name="sensitivity_high">عالية</string>
+    <string name="sensitivity_custom">مخصصة</string>
+
+    <!-- Advanced -->
+    <string name="adv_start_on_boot">التشغيل عند إعادة التشغيل</string>
+    <string name="adv_start_on_boot_desc">ملاحظة: ده بيحفظ اختيارك، لكن أندرويد بيطلب إعادة تفعيل خدمات إمكانية الوصول يدويًا بعد بعض عمليات إعادة التشغيل لأسباب أمنية - ده قيد من النظام نفسه، مش حاجة أي تطبيق يقدر يتخطاها.</string>
+    <string name="adv_live_overlay">شارة الحركة المباشرة</string>
+    <string name="adv_live_overlay_desc">بتظهر شارة صغيرة في أي مكان على الشاشة فيها درجة الحركة والحالة الحية، عشان تشوف الكاشف بيعمل إيه وانت مستخدم تطبيق تاني.</string>
+    <string name="adv_show_overlay">إظهار الشارة</string>
+    <string name="adv_hide_overlay">إخفاء الشارة</string>
+    <string name="adv_battery">البطارية</string>
+    <string name="adv_battery_settings">إعدادات توفير البطارية</string>
+    <string name="adv_debug">التصحيح</string>
+    <string name="adv_debug_mode">وضع التصحيح</string>
+    <string name="adv_open_debug">فتح شاشة التصحيح</string>
+    <string name="adv_reset">إعادة الضبط</string>
+    <string name="adv_reset_all">إعادة ضبط كل الإعدادات</string>
+
+    <!-- Debug screen -->
+    <string name="dbg_state">الحالة</string>
+    <string name="dbg_video_active">فيديو شغّال</string>
+    <string name="dbg_motion_score">درجة الحركة</string>
+    <string name="dbg_threshold">الحد الأدنى</string>
+    <string name="dbg_sampling_interval">فاصل أخذ العينات</string>
+    <string name="dbg_last_event">آخر حدث</string>
 </resources>

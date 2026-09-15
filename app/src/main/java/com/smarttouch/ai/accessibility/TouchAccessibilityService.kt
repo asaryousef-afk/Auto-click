@@ -697,7 +697,7 @@ class TouchAccessibilityService : AccessibilityService() {
 
     private fun addFloatingViewIfNeeded() {
         if (floatingView != null) {
-            Toast.makeText(this, "Point already showing at ${floatingParams?.x}, ${floatingParams?.y}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.toast_point_already_showing, floatingParams?.x ?: 0, floatingParams?.y ?: 0), Toast.LENGTH_SHORT).show()
             return
         }
         if (!android.provider.Settings.canDrawOverlays(this)) {
@@ -748,11 +748,11 @@ class TouchAccessibilityService : AccessibilityService() {
         val added = runCatching { wm.addView(view, params) }
         if (added.isFailure) {
             val reason = added.exceptionOrNull()?.javaClass?.simpleName ?: "unknown"
-            Toast.makeText(this, "Couldn't show the point: $reason", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.toast_could_not_show_point, reason), Toast.LENGTH_LONG).show()
             updateNotification("Overlay permission missing - enable it in app settings", videoActive = false)
             return
         }
-        Toast.makeText(this, "Point shown at ${params.x}, ${params.y}", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, getString(R.string.toast_point_shown_at, params.x, params.y), Toast.LENGTH_SHORT).show()
         floatingView = view
         floatingParams = params
         overlayVisible = true
@@ -763,19 +763,19 @@ class TouchAccessibilityService : AccessibilityService() {
     private fun removeFloatingView() {
         val wm = windowManager ?: return
         if (floatingView == null) {
-            Toast.makeText(this, "No point currently showing", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.toast_no_point_showing), Toast.LENGTH_SHORT).show()
             return
         }
         floatingView?.let { runCatching { wm.removeView(it) } }
         floatingView = null
         floatingParams = null
         overlayVisible = false
-        Toast.makeText(this, "Point hidden", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, getString(R.string.toast_point_hidden), Toast.LENGTH_SHORT).show()
     }
 
     private fun addDetectionPointIfNeeded() {
         if (detectionPointView != null) {
-            Toast.makeText(this, "Detection point already showing", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.toast_detection_point_already_showing), Toast.LENGTH_SHORT).show()
             return
         }
         if (!android.provider.Settings.canDrawOverlays(this)) {
@@ -815,10 +815,10 @@ class TouchAccessibilityService : AccessibilityService() {
 
         val added = runCatching { wm.addView(view, params) }
         if (added.isFailure) {
-            Toast.makeText(this, "Couldn't show detection point: ${added.exceptionOrNull()?.javaClass?.simpleName}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.toast_could_not_show_detection_point, added.exceptionOrNull()?.javaClass?.simpleName ?: "?"), Toast.LENGTH_LONG).show()
             return
         }
-        Toast.makeText(this, "Detection point shown at ${params.x}, ${params.y}", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, getString(R.string.toast_detection_point_shown_at, params.x, params.y), Toast.LENGTH_SHORT).show()
         detectionPointView = view
         detectionPointParams = params
     }
@@ -826,13 +826,13 @@ class TouchAccessibilityService : AccessibilityService() {
     private fun removeDetectionPoint() {
         val wm = windowManager ?: return
         if (detectionPointView == null) {
-            Toast.makeText(this, "No detection point currently showing", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.toast_no_detection_point_showing), Toast.LENGTH_SHORT).show()
             return
         }
         detectionPointView?.let { runCatching { wm.removeView(it) } }
         detectionPointView = null
         detectionPointParams = null
-        Toast.makeText(this, "Detection point hidden", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, getString(R.string.toast_detection_point_hidden), Toast.LENGTH_SHORT).show()
     }
 
     private fun applyOverlayVisuals(settings: TouchSettings) {
@@ -879,7 +879,7 @@ class TouchAccessibilityService : AccessibilityService() {
 
         val added = runCatching { wm.addView(view, params) }
         if (added.isFailure) {
-            Toast.makeText(this, "Couldn't show live overlay: ${added.exceptionOrNull()?.javaClass?.simpleName}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.toast_could_not_show_live_overlay, added.exceptionOrNull()?.javaClass?.simpleName ?: "?"), Toast.LENGTH_LONG).show()
             return
         }
         debugBadgeView = view
