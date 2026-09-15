@@ -131,7 +131,7 @@
 
     <!-- Advanced -->
     <string name="adv_start_on_boot">Start on boot</string>
-    <string name="adv_start_on_boot_desc">When on, Vigil automatically starts running (if a touch position is saved) as soon as its accessibility service reconnects - which happens right after the device finishes booting, as long as accessibility access was already granted before the restart. Note: some devices/Android versions require you to manually re-enable accessibility access after certain restarts for security reasons - that's an OS/OEM restriction no app can bypass, and this setting can\'t start anything until that happens.</string>
+    <string name="adv_start_on_boot_desc">Note: this saves your preference, but Android requires accessibility services to be manually re-enabled by you after some device restarts for security reasons - this is an OS restriction, not something an app can bypass.</string>
     <string name="adv_live_overlay">Live motion overlay</string>
     <string name="adv_live_overlay_desc">Shows a small badge anywhere on screen with the live motion score and state, so you can see what the detector is doing while using another app.</string>
     <string name="adv_show_overlay">Show overlay</string>
