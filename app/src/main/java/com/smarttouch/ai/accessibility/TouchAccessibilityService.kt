@@ -165,29 +165,6 @@ class TouchAccessibilityService : AccessibilityService() {
         return enabled.contains(packageName)
     }
 
-    private fun setupMediaSessionMonitoringIfPermitted() {
-        if (mediaSessionManager != null || !isMediaSessionAccessGranted()) return
-        try {
-            val manager = getSystemService(Context.MEDIA_SESSION_SERVICE) as android.media.session.MediaSessionManager
-            val component = android.content.ComponentName(this, MediaSessionListenerService::class.java)
-            manager.addOnActiveSessionsChangedListener(activeSessionsListener, component)
-            mediaSessionManager = manager
-            activeSessionsListener.onActiveSessionsChanged(manager.getActiveSessions(component))
-        } catch (e: Exception) {
-        }
-    }
-
-    private fun teardownMediaSessionMonitoring() {
-        try {
-            mediaSessionManager?.removeOnActiveSessionsChangedListener(activeSessionsListener)
-        } catch (e: Exception) {
-        }
-        trackedMediaControllers.forEach { runCatching { it.unregisterCallback(mediaControllerCallback) } }
-        trackedMediaControllers.clear()
-        mediaSessionManager = null
-        trustedMediaSessionActive = false
-    }
-
     // Landscape auto-safe-position: temporarily overrides the tap point while in
     // landscape (e.g. fullscreen video), without ever touching the user's saved
     // portrait position, which is restored automatically on rotating back.
